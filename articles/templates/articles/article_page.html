@@ -21,7 +21,7 @@
       {% if block.block_type == "heading" %}
         <h2 class="block-heading">{{ block.value }}</h2>
       {% elif block.block_type == "paragraph" %}
-        <div class="block-paragraph">{{ block.value }}</div>
+        <div class="block-paragraph">{{ block.value|richtext }}</div>
       {% elif block.block_type == "quote" %}
         <blockquote class="block-quote">{{ block.value }}</blockquote>
       {% else %}

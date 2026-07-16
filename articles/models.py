@@ -62,6 +62,7 @@ class ArticlePage(Page):
             ("heading", blocks.CharBlock(form_classname="title", label="Заголовок")),
             ("paragraph", blocks.RichTextBlock(label="Текст", features=[
                 "h3", "h4", "bold", "italic", "ol", "ul", "hr", "link",
+                "superscript", "subscript",
             ])),
             ("image", CaptionImageBlock()),
             ("quote", blocks.BlockQuoteBlock(label="Цитата")),
