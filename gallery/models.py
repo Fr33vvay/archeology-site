@@ -33,6 +33,15 @@ class GalleryFolderPage(Page):
     intro = RichTextField(blank=True, verbose_name="Описание папки")
     year = models.PositiveIntegerField("Год", null=True, blank=True)
     place = models.CharField("Место", max_length=255, blank=True)
+    source_article = models.OneToOneField(
+        "articles.ArticlePage",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="gallery_folder",
+        verbose_name="Статья-источник",
+        help_text="Если заполнено, папка создана автоматически из иллюстраций статьи.",
+    )
 
     search_fields = Page.search_fields + [
         index.SearchField("intro"),
