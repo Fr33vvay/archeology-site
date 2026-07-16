@@ -20,12 +20,20 @@
   {% if latest_articles %}
     <div class="card-list">
       {% for article in latest_articles %}
-        <article class="card">
-          <p class="meta">
-            {% if article.date %}{{ article.date|date:"d E Y" }}{% endif %}
-          </p>
-          <h3><a href="{% pageurl article %}">{{ article.title }}</a></h3>
-          {% if article.intro %}<p class="muted">{{ article.intro }}</p>{% endif %}
+        <article class="card card--article">
+          {% if article.cover %}
+            <a class="card__cover" href="{% pageurl article %}" tabindex="-1" aria-hidden="true">
+              {% image article.cover fill-160x160 as thumb %}
+              <img src="{{ thumb.url }}" alt="">
+            </a>
+          {% endif %}
+          <div class="card__body">
+            <p class="meta">
+              {% if article.date %}{{ article.date|date:"d E Y" }}{% endif %}
+            </p>
+            <h3><a href="{% pageurl article %}">{{ article.title }}</a></h3>
+            {% if article.intro %}<p class="muted">{{ article.intro }}</p>{% endif %}
+          </div>
         </article>
       {% endfor %}
     </div>

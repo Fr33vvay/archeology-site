@@ -79,6 +79,8 @@ class ArticlePage(Page):
         on_delete=models.SET_NULL,
         related_name="+",
         verbose_name="Обложка",
+        help_text="Маленькая картинка в списках статей (на главной и в разделе «Статьи»). "
+        "Внутри самой статьи не показывается — иллюстрации добавляйте в «Содержание».",
     )
 
     search_fields = Page.search_fields + [

@@ -9,13 +9,6 @@
   <h1 class="page-title">{{ page.title }}</h1>
   {% if page.intro %}<p class="lede">{{ page.intro }}</p>{% endif %}
 
-  {% if page.cover %}
-    <figure class="figure">
-      {% image page.cover width-1200 as cover %}
-      <img src="{{ cover.url }}" alt="{{ page.cover.title }}">
-    </figure>
-  {% endif %}
-
   <div class="article-body">
     {% for block in page.body %}
       {% if block.block_type == "heading" %}
