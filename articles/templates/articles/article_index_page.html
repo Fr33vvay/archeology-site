@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags %}
+
+{% block content %}
+<h1 class="page-title">{{ page.title }}</h1>
+{% if page.intro %}
+  <div class="lede">{{ page.intro|richtext }}</div>
+{% endif %}
+
+{% if articles %}
+  <div class="card-list" style="margin-top: 1.5rem;">
+    {% for article in articles %}
+      <article class="card">
+        <p class="meta">{% if article.date %}{{ article.date|date:"d E Y" }}{% endif %}</p>
+        <h3><a href="{% pageurl article %}">{{ article.title }}</a></h3>
+        {% if article.intro %}<p class="muted">{{ article.intro }}</p>{% endif %}
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="empty">Пока нет опубликованных статей.</p>
+{% endif %}
+{% endblock %}

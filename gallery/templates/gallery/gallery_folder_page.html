@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags wagtailimages_tags %}
+
+{% block content %}
+<article>
+  <h1 class="page-title">{{ page.title }}</h1>
+  <p class="meta">
+    {% if page.year %}{{ page.year }}{% endif %}
+    {% if page.year and page.place %} · {% endif %}
+    {% if page.place %}{{ page.place }}{% endif %}
+  </p>
+  {% if page.intro %}
+    <div class="lede">{{ page.intro|richtext }}</div>
+  {% endif %}
+
+  {% if page.photos.all %}
+    <div class="photo-grid" style="margin-top: 1.5rem;">
+      {% for photo in page.photos.all %}
+        <figure class="photo-card">
+          {% image photo.image width-900 as img %}
+          <a href="{{ img.url }}" target="_blank" rel="noopener">
+            {% image photo.image fill-600x450 as thumb %}
+            <img src="{{ thumb.url }}" alt="{{ photo.caption|default:photo.image.title }}">
+          </a>
+          {% if photo.caption %}<figcaption>{{ photo.caption }}</figcaption>{% endif %}
+        </figure>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty">В этой папке пока нет фотографий.</p>
+  {% endif %}
+</article>
+{% endblock %}

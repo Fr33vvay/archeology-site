@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags wagtailimages_tags %}
+
+{% block content %}
+<h1 class="page-title">{{ page.title }}</h1>
+{% if page.intro %}
+  <div class="lede">{{ page.intro|richtext }}</div>
+{% endif %}
+
+{% if folders %}
+  <div class="gallery-folders" style="margin-top: 1.5rem;">
+    {% for folder in folders %}
+      <article class="folder-card">
+        <a href="{% pageurl folder %}">
+          {% if folder.cover_image %}
+            {% image folder.cover_image fill-600x450 as cover %}
+            <img src="{{ cover.url }}" alt="{{ folder.title }}">
+          {% else %}
+            <div style="aspect-ratio:4/3;background:var(--accent-soft);"></div>
+          {% endif %}
+          <div class="folder-card__body">
+            <h3 style="font-family:var(--serif);margin:0 0 0.35rem;font-size:1.1rem;">{{ folder.title }}</h3>
+            <p class="meta">
+              {% if folder.year %}{{ folder.year }}{% endif %}
+              {% if folder.year and folder.place %} · {% endif %}
+              {% if folder.place %}{{ folder.place }}{% endif %}
+            </p>
+          </div>
+        </a>
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="empty">Папки галереи пока не созданы.</p>
+{% endif %}
+{% endblock %}

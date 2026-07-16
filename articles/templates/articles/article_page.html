@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags wagtailimages_tags %}
+
+{% block content %}
+<article class="article">
+  <p class="meta">
+    {% if page.date %}{{ page.date|date:"d E Y" }}{% endif %}
+  </p>
+  <h1 class="page-title">{{ page.title }}</h1>
+  {% if page.intro %}<p class="lede">{{ page.intro }}</p>{% endif %}
+
+  {% if page.cover %}
+    <figure class="figure">
+      {% image page.cover width-1200 as cover %}
+      <img src="{{ cover.url }}" alt="{{ page.cover.title }}">
+    </figure>
+  {% endif %}
+
+  <div class="article-body">
+    {% for block in page.body %}
+      {% if block.block_type == "heading" %}
+        <h2 class="block-heading">{{ block.value }}</h2>
+      {% elif block.block_type == "paragraph" %}
+        <div class="block-paragraph">{{ block.value }}</div>
+      {% elif block.block_type == "quote" %}
+        <blockquote class="block-quote">{{ block.value }}</blockquote>
+      {% else %}
+        {% include_block block %}
+      {% endif %}
+    {% endfor %}
+  </div>
+</article>
+{% endblock %}

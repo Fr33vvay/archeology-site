@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
+static/
+.env
+.DS_Store
+*.log
+.idea/
+.vscode/
+mysite/settings/local.py
+.superpowers/

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags %}
+
+{% block content %}
+<article class="article">
+  <h1 class="page-title">{{ page.title }}</h1>
+  {% if page.intro %}
+    <div class="lede">{{ page.intro|richtext }}</div>
+  {% endif %}
+  <ul class="contact-list">
+    {% if page.email %}<li><strong>Email:</strong> <a href="mailto:{{ page.email }}">{{ page.email }}</a></li>{% endif %}
+    {% if page.phone %}<li><strong>Телефон:</strong> {{ page.phone }}</li>{% endif %}
+    {% if page.address %}<li><strong>Адрес:</strong> {{ page.address }}</li>{% endif %}
+  </ul>
+</article>
+{% endblock %}

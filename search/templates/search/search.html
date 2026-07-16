@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags %}
+
+{% block title %}Поиск{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Поиск</h1>
+
+<form class="search-form" action="{% url 'search' %}" method="get">
+  <input type="text" name="query" value="{{ search_query|default:'' }}" placeholder="Найти статью или страницу…" aria-label="Запрос">
+  <button type="submit">Искать</button>
+</form>
+
+{% if search_query %}
+  {% if search_results %}
+    <div class="card-list">
+      {% for result in search_results %}
+        <article class="card">
+          <h3><a href="{% pageurl result %}">{{ result }}</a></h3>
+          {% if result.search_description %}
+            <p class="muted">{{ result.search_description }}</p>
+          {% endif %}
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty">Ничего не найдено по запросу «{{ search_query }}».</p>
+  {% endif %}
+{% else %}
+  <p class="muted">Введите запрос, чтобы найти материалы сайта.</p>
+{% endif %}
+{% endblock %}

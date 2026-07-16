@@ -1,0 +1,46 @@
+{% load static wagtailcore_tags wagtailuserbar %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% if page %}{{ page.title }}{% else %}Научный архив{% endif %}{% endblock %} — Научный архив</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=Source+Serif+4:ital,wght@0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  {% wagtailuserbar %}
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="brand" href="{% if site_root %}{% pageurl site_root %}{% else %}/{% endif %}">
+        Научный архив
+      </a>
+      <nav class="nav" aria-label="Основное меню">
+        {% if site_root %}
+          <a href="{% pageurl site_root %}" {% if page and page.url == site_root.url %}class="is-active"{% endif %}>Главная</a>
+        {% endif %}
+        {% for item in nav_pages %}
+          <a href="{% pageurl item %}" {% if page and item.url in page.url %}class="is-active"{% endif %}>{{ item.title }}</a>
+        {% endfor %}
+        <a href="{% url 'search' %}">Поиск</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="site-main">
+    <div class="wrap">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      Научные материалы и иллюстрации. Сайт-архив.
+    </div>
+  </footer>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
