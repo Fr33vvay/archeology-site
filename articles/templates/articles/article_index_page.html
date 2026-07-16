@@ -18,7 +18,7 @@
           </a>
         {% endif %}
         <div class="card__body">
-          <p class="meta">{% if article.date %}{{ article.date|date:"d E Y" }}{% endif %}</p>
+          <p class="meta">{% if article.first_published_at %}{{ article.first_published_at|date:"d E Y" }}{% endif %}</p>
           <h3><a href="{% pageurl article %}">{{ article.title }}</a></h3>
           {% if article.intro %}<p class="muted">{{ article.intro }}</p>{% endif %}
         </div>

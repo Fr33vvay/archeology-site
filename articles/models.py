@@ -55,7 +55,6 @@ class ArticleIndexPage(Page):
 
 
 class ArticlePage(Page):
-    date = models.DateField("Дата публикации", null=True, blank=True)
     intro = models.CharField("Краткое описание", max_length=500, blank=True)
     body = StreamField(
         [
@@ -89,7 +88,6 @@ class ArticlePage(Page):
     ]
 
     content_panels = Page.content_panels + [
-        FieldPanel("date"),
         FieldPanel("intro"),
         FieldPanel("cover"),
         FieldPanel("body"),
