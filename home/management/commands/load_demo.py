@@ -1,6 +1,5 @@
 """Создаёт демо-структуру сайта, две статьи, папку галереи и двух редакторов."""
 
-from datetime import date
 from io import BytesIO
 
 from django.contrib.auth import get_user_model
@@ -155,7 +154,6 @@ class Command(BaseCommand):
             a1 = ArticlePage(
                 title="Демо: Методика фиксации находок",
                 slug="demo-article-1",
-                date=date(2024, 6, 15),
                 intro="Краткий демо-текст о полевой фиксации и иллюстрациях в статье.",
                 cover=cover,
                 body=[
@@ -195,7 +193,6 @@ class Command(BaseCommand):
             a2 = ArticlePage(
                 title="Демо: Заметки о стратиграфии",
                 slug="demo-article-2",
-                date=date(2023, 9, 1),
                 intro="Вторая демо-публикация для проверки списка статей и поиска.",
                 body=[
                     {
