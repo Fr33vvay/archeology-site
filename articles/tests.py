@@ -1,3 +1,143 @@
-from django.test import TestCase
+"""Тесты комментариев к статьям."""
 
-# Create your tests here.
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+from django.test import TestCase
+from wagtail.models import Page, Site
+
+from articles.models import ArticleIndexPage, ArticlePage, Comment
+from home.models import HomePage
+
+User = get_user_model()
+
+
+class CommentModelTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        root = Page.get_first_root_node()
+        home = HomePage(title="Главная", slug="home-comments")
+        root.add_child(instance=home)
+        home.save_revision().publish()
+        Site.objects.update_or_create(
+            is_default_site=True,
+            defaults={"hostname": "localhost", "root_page": home, "site_name": "Test"},
+        )
+        index = ArticleIndexPage(title="Статьи", slug="articles-comments")
+        home.add_child(instance=index)
+        index.save_revision().publish()
+        article = ArticlePage(title="Статья", slug="article-comments", intro="intro")
+        index.add_child(instance=article)
+        article.save_revision().publish()
+        cls.article = article
+        cls.author = User.objects.create_user(
+            username="reader", email="reader@yandex.ru", password="pass-12345"
+        )
+        cls.other = User.objects.create_user(
+            username="other", email="other@yandex.ru", password="pass-12345"
+        )
+        cls.staff = User.objects.create_user(
+            username="staff",
+            email="staff@yandex.ru",
+            password="pass-12345",
+            is_staff=True,
+        )
+
+    def test_top_level_comment(self):
+        """Корневой комментарий сохраняется без родителя."""
+        c = Comment.objects.create(
+            article=self.article, author=self.author, body="Первый комментарий"
+        )
+        self.assertIsNone(c.parent_id)
+        self.assertFalse(c.is_deleted)
+
+    def test_reply_to_top_level(self):
+        """Ответ на корневой комментарий допускается."""
+        parent = Comment.objects.create(
+            article=self.article, author=self.author, body="Родитель"
+        )
+        reply = Comment.objects.create(
+            article=self.article, author=self.other, parent=parent, body="Ответ"
+        )
+        self.assertEqual(reply.parent_id, parent.pk)
+
+    def test_reply_to_reply_rejected(self):
+        """Ответ на ответ запрещён (один уровень вложенности)."""
+        parent = Comment.objects.create(
+            article=self.article, author=self.author, body="Родитель"
+        )
+        reply = Comment.objects.create(
+            article=self.article, author=self.other, parent=parent, body="Ответ"
+        )
+        nested = Comment(
+            article=self.article, author=self.author, parent=reply, body="Вложенный"
+        )
+        with self.assertRaises(ValidationError):
+            nested.save()
+
+    def test_can_delete_author_and_staff(self):
+        """Удалять может автор или сотрудник, чужой пользователь — нет."""
+        c = Comment.objects.create(
+            article=self.article, author=self.author, body="Текст"
+        )
+        self.assertTrue(c.can_delete(self.author))
+        self.assertTrue(c.can_delete(self.staff))
+        self.assertFalse(c.can_delete(self.other))
+
+    def test_soft_delete(self):
+        """Удаление помечает комментарий, не стирает запись."""
+        c = Comment.objects.create(
+            article=self.article, author=self.author, body="Текст"
+        )
+        c.soft_delete()
+        c.refresh_from_db()
+        self.assertTrue(c.is_deleted)
+
+
+class CommentViewTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        root = Page.get_first_root_node()
+        home = HomePage.objects.first()
+        if not home:
+            home = HomePage(title="Главная", slug="home-comments-v")
+            root.add_child(instance=home)
+            home.save_revision().publish()
+        index = ArticleIndexPage.objects.child_of(home).first()
+        if not index:
+            index = ArticleIndexPage(title="Статьи", slug="articles-v")
+            home.add_child(instance=index)
+            index.save_revision().publish()
+        article = ArticlePage(title="Статья для views", slug="article-views", intro="")
+        index.add_child(instance=article)
+        article.save_revision().publish()
+        cls.article = article
+        cls.user = User.objects.create_user(
+            username="commenter", email="c@yandex.ru", password="pass-12345"
+        )
+
+    def test_anonymous_cannot_post(self):
+        """Аноним перенаправляется на вход при попытке оставить комментарий."""
+        url = f"/comments/add/{self.article.pk}/"
+        response = self.client.post(url, {"body": "Привет", "parent": ""})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response.url)
+        self.assertEqual(Comment.objects.count(), 0)
+
+    def test_logged_in_can_post(self):
+        """Вошедший пользователь создаёт комментарий."""
+        self.client.login(username="commenter", password="pass-12345")
+        url = f"/comments/add/{self.article.pk}/"
+        response = self.client.post(url, {"body": "Привет всем", "parent": ""})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Comment.objects.filter(article=self.article).count(), 1)
+
+    def test_author_can_delete_own(self):
+        """Автор мягко удаляет свой комментарий через POST."""
+        c = Comment.objects.create(
+            article=self.article, author=self.user, body="Удалить меня"
+        )
+        self.client.login(username="commenter", password="pass-12345")
+        response = self.client.post(f"/comments/delete/{c.pk}/")
+        self.assertEqual(response.status_code, 302)
+        c.refresh_from_db()
+        self.assertTrue(c.is_deleted)

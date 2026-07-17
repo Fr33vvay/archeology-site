@@ -6,6 +6,7 @@ from wagtail.admin import urls as wagtailadmin_urls
 from wagtail import urls as wagtail_urls
 from wagtail.documents import urls as wagtaildocs_urls
 
+from articles import views as articles_views
 from search import views as search_views
 
 urlpatterns = [
@@ -14,6 +15,12 @@ urlpatterns = [
     path("documents/", include(wagtaildocs_urls)),
     path("accounts/", include("allauth.urls")),
     path("search/", search_views.search, name="search"),
+    path("comments/add/<int:page_id>/", articles_views.add_comment, name="comment_add"),
+    path(
+        "comments/delete/<int:comment_id>/",
+        articles_views.delete_comment,
+        name="comment_delete",
+    ),
 ]
 
 

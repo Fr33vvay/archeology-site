@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from wagtail import blocks
@@ -99,3 +101,89 @@ class ArticlePage(Page):
     class Meta:
         verbose_name = "Статья"
         verbose_name_plural = "Статьи"
+
+    def get_context(self, request, *args, **kwargs):
+        context = super().get_context(request, *args, **kwargs)
+        from articles.forms import CommentForm
+
+        roots = (
+            Comment.objects.filter(article=self, parent__isnull=True)
+            .select_related("author")
+            .prefetch_related(
+                models.Prefetch(
+                    "replies",
+                    queryset=Comment.objects.select_related("author").order_by("created_at"),
+                )
+            )
+            .order_by("created_at")
+        )
+        context["comments"] = roots
+        context["comment_form"] = CommentForm()
+        context["comments_count"] = Comment.objects.filter(article=self).count()
+        return context
+
+
+class Comment(models.Model):
+    article = models.ForeignKey(
+        ArticlePage,
+        on_delete=models.CASCADE,
+        related_name="comments",
+        verbose_name="Статья",
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="article_comments",
+        verbose_name="Автор",
+    )
+    parent = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="replies",
+        verbose_name="Ответ на",
+    )
+    body = models.TextField("Текст", max_length=5000)
+    created_at = models.DateTimeField("Создан", auto_now_add=True)
+    is_deleted = models.BooleanField("Удалён", default=False)
+
+    class Meta:
+        verbose_name = "Комментарий"
+        verbose_name_plural = "Комментарии"
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"#{self.pk} к статье {self.article_id}"
+
+    def clean(self):
+        if self.parent_id:
+            parent = self.parent
+            if parent is None:
+                return
+            if parent.parent_id is not None:
+                raise ValidationError("Отвечать можно только на комментарий верхнего уровня.")
+            if parent.article_id != self.article_id:
+                raise ValidationError("Ответ должен относиться к той же статье.")
+
+    def save(self, *args, skip_validation=False, **kwargs):
+        if not skip_validation:
+            self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def soft_delete(self):
+        self.is_deleted = True
+        return self.save(update_fields=["is_deleted"], skip_validation=True)
+
+    def can_delete(self, user) -> bool:
+        if not user or not user.is_authenticated:
+            return False
+        if self.is_deleted:
+            return False
+        return user.is_staff or user.pk == self.author_id
+
+    @property
+    def author_label(self) -> str:
+        if self.author.email:
+            return self.author.email
+        return self.author.get_username()
