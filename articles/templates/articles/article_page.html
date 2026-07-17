@@ -106,7 +106,7 @@
                     <summary>Ответить</summary>
                     <form class="comment-form comment-form--reply" method="post" action="{% url 'comment_add' page.pk %}">
                       {% csrf_token %}
-                      <input type="hidden" name="parent" value="{{ comment.pk }}">
+                      <input type="hidden" name="parent_id" value="{{ comment.pk }}">
                       <label class="auth-label">
                         <span>Ответ</span>
                         <textarea name="body" rows="3" class="comment-textarea" required placeholder="Ваш ответ"></textarea>

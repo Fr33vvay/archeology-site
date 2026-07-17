@@ -8,6 +8,14 @@ from articles.forms import CommentForm
 from articles.models import ArticlePage, Comment
 
 
+def _form_error_messages(form):
+    errors = []
+    for field, field_errors in form.errors.items():
+        for err in field_errors:
+            errors.append(str(err))
+    return errors or ["Не удалось отправить комментарий."]
+
+
 @login_required
 @require_POST
 def add_comment(request, page_id):
@@ -18,9 +26,13 @@ def add_comment(request, page_id):
         comment.article = article
         comment.author = request.user
         comment.save()
-        messages.success(request, "Комментарий опубликован.")
+        if comment.parent_id:
+            messages.success(request, "Ответ опубликован.")
+        else:
+            messages.success(request, "Комментарий опубликован.")
     else:
-        messages.error(request, "Не удалось отправить комментарий. Проверьте текст.")
+        for err in _form_error_messages(form):
+            messages.error(request, err)
     return redirect(article.url + "#comments")
 
 
@@ -34,4 +46,5 @@ def delete_comment(request, comment_id):
     if not article.live:
         raise Http404
     comment.soft_delete()
+    messages.success(request, "Комментарий удалён.")
     return redirect(article.url + "#comments")

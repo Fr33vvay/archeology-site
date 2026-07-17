@@ -118,7 +118,7 @@ class CommentViewTests(TestCase):
     def test_anonymous_cannot_post(self):
         """Аноним перенаправляется на вход при попытке оставить комментарий."""
         url = f"/comments/add/{self.article.pk}/"
-        response = self.client.post(url, {"body": "Привет", "parent": ""})
+        response = self.client.post(url, {"body": "Привет"})
         self.assertEqual(response.status_code, 302)
         self.assertIn("/accounts/login/", response.url)
         self.assertEqual(Comment.objects.count(), 0)
@@ -127,9 +127,23 @@ class CommentViewTests(TestCase):
         """Вошедший пользователь создаёт комментарий."""
         self.client.login(username="commenter", password="pass-12345")
         url = f"/comments/add/{self.article.pk}/"
-        response = self.client.post(url, {"body": "Привет всем", "parent": ""})
+        response = self.client.post(url, {"body": "Привет всем"})
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Comment.objects.filter(article=self.article).count(), 1)
+
+    def test_logged_in_can_reply(self):
+        """Вошедший пользователь создаёт ответ с parent_id."""
+        parent = Comment.objects.create(
+            article=self.article, author=self.user, body="Родитель"
+        )
+        self.client.login(username="commenter", password="pass-12345")
+        url = f"/comments/add/{self.article.pk}/"
+        response = self.client.post(
+            url, {"body": "Это ответ", "parent_id": str(parent.pk)}
+        )
+        self.assertEqual(response.status_code, 302)
+        reply = Comment.objects.get(parent=parent)
+        self.assertEqual(reply.body, "Это ответ")
 
     def test_author_can_delete_own(self):
         """Автор мягко удаляет свой комментарий через POST."""

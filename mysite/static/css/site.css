@@ -257,6 +257,41 @@ a:hover {
   .article-with-comments .article {
     width: 100%;
   }
+
+  /* Раскрытая панель — широкая шторка справа, почти на весь экран */
+  .comments-panel.is-open {
+    position: fixed;
+    top: 4.75rem;
+    right: 1rem;
+    bottom: 1rem;
+    left: auto;
+    width: min(52rem, calc(100vw - 2rem));
+    max-height: none;
+    z-index: 40;
+    margin: 0;
+  }
+
+  .comments-panel.is-open .comments-panel__drawer {
+    height: 100%;
+    max-height: none;
+    overflow: auto;
+    box-shadow: -8px 0 32px rgba(28, 26, 23, 0.12);
+  }
+
+  .comments-panel-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(28, 26, 23, 0.28);
+    z-index: 35;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .comments-panel-backdrop.is-visible {
+    display: block;
+  }
 }
 
 .article-body {
@@ -400,11 +435,6 @@ a:hover {
     top: 5.5rem;
     max-height: calc(100vh - 6.5rem);
   }
-
-  .comments-panel.is-open {
-    display: flex;
-    flex-direction: column;
-  }
 }
 
 .comments-panel__peek {
@@ -490,13 +520,6 @@ a:hover {
   border: 1px solid var(--line);
   background: var(--panel);
   padding: 1rem 1.1rem 1.25rem;
-}
-
-@media (min-width: 1040px) {
-  .comments-panel.is-open .comments-panel__drawer {
-    max-height: calc(100vh - 6.5rem);
-    overflow: auto;
-  }
 }
 
 .comments-panel__drawer-head {
