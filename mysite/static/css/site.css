@@ -564,6 +564,13 @@ a:hover {
 
 .comment-form--reply {
   margin: 0.75rem 0 0;
+  max-width: none;
+}
+
+.comment-form--reply .comment-textarea {
+  min-height: 9rem;
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 .comment-textarea,
@@ -595,7 +602,8 @@ a:hover {
 .comment__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem 0.75rem;
+  align-items: center;
+  gap: 0.35rem 0.65rem;
   margin-bottom: 0.3rem;
   font-size: 0.82rem;
   color: var(--muted);
@@ -604,6 +612,11 @@ a:hover {
 .comment__author {
   color: var(--ink);
   font-weight: 600;
+}
+
+.comment__meta .comment-delete {
+  display: inline-flex;
+  margin-left: auto;
 }
 
 .comment__body {
@@ -634,12 +647,13 @@ a:hover {
 .comment-delete__btn {
   border: none;
   background: none;
-  padding: 0;
+  padding: 0 0.15rem;
   color: var(--muted);
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 1.25rem;
+  line-height: 1;
   cursor: pointer;
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .comment-delete__btn:hover {

@@ -2,7 +2,7 @@
 {% load static wagtailcore_tags wagtailimages_tags %}
 
 {% block content %}
-<div class="article-with-comments">
+<div class="article-with-comments" data-article-layout>
   <article class="article">
     <p class="meta">
       {% if page.first_published_at %}{{ page.first_published_at|date:"d E Y" }}{% endif %}
@@ -93,6 +93,14 @@
               <div class="comment__meta">
                 <span class="comment__author">{{ comment.author_label }}</span>
                 <time class="comment__date" datetime="{{ comment.created_at|date:'c' }}">{{ comment.created_at|date:"d E Y, H:i" }}</time>
+                {% if not comment.is_deleted and user.is_authenticated %}
+                  {% if comment.author_id == user.id or user.is_staff %}
+                    <form class="comment-delete" method="post" action="{% url 'comment_delete' comment.pk %}" onsubmit="return confirm('Удалить комментарий?');">
+                      {% csrf_token %}
+                      <button type="submit" class="comment-delete__btn" title="Удалить" aria-label="Удалить комментарий">×</button>
+                    </form>
+                  {% endif %}
+                {% endif %}
               </div>
               {% if comment.is_deleted %}
                 <p class="comment__body comment__body--deleted">Комментарий удалён</p>
@@ -109,17 +117,11 @@
                       <input type="hidden" name="parent_id" value="{{ comment.pk }}">
                       <label class="auth-label">
                         <span>Ответ</span>
-                        <textarea name="body" rows="3" class="comment-textarea" required placeholder="Ваш ответ"></textarea>
+                        <textarea name="body" rows="6" class="comment-textarea" required placeholder="Ваш ответ"></textarea>
                       </label>
                       <button class="button" type="submit">Ответить</button>
                     </form>
                   </details>
-                  {% if comment.author_id == user.id or user.is_staff %}
-                    <form class="comment-delete" method="post" action="{% url 'comment_delete' comment.pk %}" onsubmit="return confirm('Удалить комментарий?');">
-                      {% csrf_token %}
-                      <button type="submit" class="comment-delete__btn">Удалить</button>
-                    </form>
-                  {% endif %}
                 {% endif %}
               </div>
 
@@ -130,19 +132,19 @@
                       <div class="comment__meta">
                         <span class="comment__author">{{ reply.author_label }}</span>
                         <time class="comment__date" datetime="{{ reply.created_at|date:'c' }}">{{ reply.created_at|date:"d E Y, H:i" }}</time>
+                        {% if not reply.is_deleted and user.is_authenticated %}
+                          {% if reply.author_id == user.id or user.is_staff %}
+                            <form class="comment-delete" method="post" action="{% url 'comment_delete' reply.pk %}" onsubmit="return confirm('Удалить комментарий?');">
+                              {% csrf_token %}
+                              <button type="submit" class="comment-delete__btn" title="Удалить" aria-label="Удалить комментарий">×</button>
+                            </form>
+                          {% endif %}
+                        {% endif %}
                       </div>
                       {% if reply.is_deleted %}
                         <p class="comment__body comment__body--deleted">Комментарий удалён</p>
                       {% else %}
                         <p class="comment__body">{{ reply.body|linebreaksbr }}</p>
-                        {% if user.is_authenticated %}
-                          {% if reply.author_id == user.id or user.is_staff %}
-                            <form class="comment-delete" method="post" action="{% url 'comment_delete' reply.pk %}" onsubmit="return confirm('Удалить комментарий?');">
-                              {% csrf_token %}
-                              <button type="submit" class="comment-delete__btn">Удалить</button>
-                            </form>
-                          {% endif %}
-                        {% endif %}
                       {% endif %}
                     </li>
                   {% endfor %}
