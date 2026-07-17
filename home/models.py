@@ -34,6 +34,7 @@ class HomePage(Page):
     subpage_types = [
         "articles.ArticleIndexPage",
         "gallery.GalleryIndexPage",
+        "blog.BlogIndexPage",
         "home.AuthorPage",
         "home.ContactPage",
     ]

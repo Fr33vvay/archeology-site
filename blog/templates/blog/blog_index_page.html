@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% load static wagtailcore_tags %}
+
+{% block content %}
+<h1 class="page-title">{{ page.title }}</h1>
+{% if page.intro %}<div class="lede">{{ page.intro|richtext }}</div>{% endif %}
+
+{% if messages %}
+  <ul class="comment-messages">
+    {% for message in messages %}
+      <li class="comment-messages__item{% if message.tags %} comment-messages__item--{{ message.tags }}{% endif %}">{{ message }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+{% if user.is_superuser %}
+  <div class="blog-compose">
+    <form class="comment-form comment-form--compose" method="post" action="{% url 'blog_post_add' %}" enctype="multipart/form-data">
+      {% csrf_token %}
+      <label class="auth-label">
+        <span>{{ post_form.body.label }}</span>
+        {{ post_form.body }}
+      </label>
+      <label class="comment-images-field">
+        <span class="comment-images-field__label">Фото (до 3, каждое до 5 МБ)</span>
+        <input type="file" name="images" accept="image/jpeg,image/png,image/webp,image/gif" multiple data-comment-images>
+        <div class="comment-images-preview" data-comment-images-preview></div>
+      </label>
+      <button class="button" type="submit">Опубликовать</button>
+    </form>
+  </div>
+{% elif not user.is_authenticated %}
+  <p class="muted">
+    <a href="{% url 'account_login' %}?next={{ request.path }}">Войдите</a>,
+    чтобы лайкать и комментировать посты.
+  </p>
+{% endif %}
+
+{% if posts %}
+  <div class="blog-feed">
+    {% for post in posts %}
+      <article class="blog-post" id="post-{{ post.pk }}">
+        <div class="comment__meta">
+          <span class="comment__author">{{ post.author_label }}</span>
+          <time class="comment__date" datetime="{{ post.created_at|date:'c' }}">{{ post.created_at|date:"d E Y, H:i" }}</time>
+          {% if user.is_authenticated and post.author_id == user.id or user.is_superuser %}
+            <form class="comment-delete" method="post" action="{% url 'blog_post_delete' post.pk %}" onsubmit="return confirm('Удалить пост?');">
+              {% csrf_token %}
+              <button type="submit" class="comment-delete__btn" title="Удалить" aria-label="Удалить пост">×</button>
+            </form>
+          {% endif %}
+        </div>
+
+        {% if post.body %}<p class="comment__body">{{ post.body|linebreaksbr }}</p>{% endif %}
+
+        {% if post.images.all %}
+          <ul class="comment-images">
+            {% for img in post.images.all %}
+              <li>
+                <button type="button" class="comment-images__link" data-comment-lightbox data-full-src="{{ img.image.url }}">
+                  <img src="{{ img.image.url }}" alt="" class="comment-images__thumb" loading="lazy">
+                </button>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+
+        <div class="blog-post__actions">
+          {% if user.is_authenticated %}
+            <form class="like-form" method="post" action="{% url 'blog_post_like' post.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="like-button{% if post.is_liked %} is-active{% endif %}" aria-pressed="{% if post.is_liked %}true{% else %}false{% endif %}">
+                ♥ <span>{{ post.likes_count }}</span>
+              </button>
+            </form>
+          {% else %}
+            <span class="like-button" aria-hidden="true">♥ <span>{{ post.likes_count }}</span></span>
+          {% endif %}
+
+          {% if user.is_authenticated and post.author_id == user.id %}
+            <details class="comment-edit">
+              <summary>Изменить</summary>
+              <form class="comment-form comment-form--edit" method="post" action="{% url 'blog_post_edit' post.pk %}">
+                {% csrf_token %}
+                <textarea name="body" rows="4" class="comment-textarea">{{ post.body }}</textarea>
+                <button class="button" type="submit">Сохранить</button>
+              </form>
+            </details>
+          {% endif %}
+        </div>
+
+        {% if post.comments_preview %}
+          <ul class="comment-list">
+            {% for comment in post.comments_preview %}
+              {% include "blog/includes/blog_comment.html" with comment=comment %}
+            {% endfor %}
+          </ul>
+          {% if post.comments_rest %}
+            <ul class="comment-list comment-list--rest" id="post-{{ post.pk }}-rest" hidden>
+              {% for comment in post.comments_rest %}
+                {% include "blog/includes/blog_comment.html" with comment=comment %}
+              {% endfor %}
+            </ul>
+            <button
+              type="button"
+              class="comments-toggle"
+              data-comments-toggle="post-{{ post.pk }}-rest"
+              data-show-label="Развернуть ({{ post.comments_rest|length }})"
+              data-hide-label="Свернуть"
+            >Развернуть ({{ post.comments_rest|length }})</button>
+          {% endif %}
+        {% elif post.comments_count == 0 %}
+          <p class="muted">Пока нет комментариев.</p>
+        {% endif %}
+
+        {% if user.is_authenticated %}
+          <form class="comment-form" method="post" action="{% url 'blog_comment_add' post.pk %}">
+            {% csrf_token %}
+            <label class="auth-label">
+              <span>{{ comment_form.body.label }}</span>
+              {{ comment_form.body }}
+            </label>
+            <button class="button" type="submit">Отправить</button>
+          </form>
+        {% endif %}
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="empty">Пока нет опубликованных постов.</p>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<div class="comment-lightbox" data-comment-lightbox-root hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="Просмотр изображения">
+  <button type="button" class="comment-lightbox__close" data-comment-lightbox-close aria-label="Закрыть">×</button>
+  <img alt="" class="comment-lightbox__img" data-comment-lightbox-img>
+</div>
+<script src="{% static 'js/comment-images.js' %}"></script>
+<script src="{% static 'js/blog-comments-toggle.js' %}"></script>
+{% endblock %}

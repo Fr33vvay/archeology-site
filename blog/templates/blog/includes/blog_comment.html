@@ -1,0 +1,39 @@
+<li class="comment" id="blog-comment-{{ comment.pk }}">
+  <div class="comment__meta">
+    <span class="comment__author">{{ comment.author_label }}</span>
+    <time class="comment__date" datetime="{{ comment.created_at|date:'c' }}">{{ comment.created_at|date:"d E Y, H:i" }}</time>
+    {% if not comment.is_deleted and user.is_authenticated and comment.author_id == user.id %}
+      <form class="comment-delete" method="post" action="{% url 'blog_comment_delete' comment.pk %}" onsubmit="return confirm('Удалить комментарий?');">
+        {% csrf_token %}
+        <button type="submit" class="comment-delete__btn" title="Удалить" aria-label="Удалить комментарий">×</button>
+      </form>
+    {% endif %}
+  </div>
+  {% if comment.is_deleted %}
+    <p class="comment__body comment__body--deleted">Комментарий удалён</p>
+  {% else %}
+    <p class="comment__body">{{ comment.body|linebreaksbr }}</p>
+    <div class="comment__actions">
+      {% if user.is_authenticated %}
+        <form class="like-form" method="post" action="{% url 'blog_comment_like' comment.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="like-button{% if comment.is_liked %} is-active{% endif %}" aria-pressed="{% if comment.is_liked %}true{% else %}false{% endif %}">
+            ♥ <span>{{ comment.likes_count }}</span>
+          </button>
+        </form>
+      {% else %}
+        <span class="like-button" aria-hidden="true">♥ <span>{{ comment.likes_count }}</span></span>
+      {% endif %}
+      {% if user.is_authenticated and comment.author_id == user.id %}
+        <details class="comment-edit">
+          <summary>Изменить</summary>
+          <form class="comment-form comment-form--edit" method="post" action="{% url 'blog_comment_edit' comment.pk %}">
+            {% csrf_token %}
+            <textarea name="body" rows="3" class="comment-textarea">{{ comment.body }}</textarea>
+            <button class="button" type="submit">Сохранить</button>
+          </form>
+        </details>
+      {% endif %}
+    </div>
+  {% endif %}
+</li>

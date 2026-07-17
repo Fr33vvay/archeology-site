@@ -10,6 +10,7 @@ INSTALLED_APPS = [
     "search",
     "articles.apps.ArticlesConfig",
     "gallery",
+    "blog",
     "accounts.apps.AccountsConfig",
     "wagtail.contrib.forms",
     "wagtail.contrib.redirects",

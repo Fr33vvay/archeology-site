@@ -8,6 +8,7 @@ from wagtail.documents import urls as wagtaildocs_urls
 
 from accounts import views as accounts_views
 from articles import views as articles_views
+from blog import views as blog_views
 from search import views as search_views
 
 urlpatterns = [
@@ -27,6 +28,26 @@ urlpatterns = [
         "comments/delete/<int:comment_id>/",
         articles_views.delete_comment,
         name="comment_delete",
+    ),
+    path("blog/posts/add/", blog_views.add_post, name="blog_post_add"),
+    path("blog/posts/edit/<int:post_id>/", blog_views.edit_post, name="blog_post_edit"),
+    path("blog/posts/delete/<int:post_id>/", blog_views.delete_post, name="blog_post_delete"),
+    path("blog/posts/like/<int:post_id>/", blog_views.toggle_post_like, name="blog_post_like"),
+    path("blog/comments/add/<int:post_id>/", blog_views.add_comment, name="blog_comment_add"),
+    path(
+        "blog/comments/edit/<int:comment_id>/",
+        blog_views.edit_comment,
+        name="blog_comment_edit",
+    ),
+    path(
+        "blog/comments/delete/<int:comment_id>/",
+        blog_views.delete_comment,
+        name="blog_comment_delete",
+    ),
+    path(
+        "blog/comments/like/<int:comment_id>/",
+        blog_views.toggle_comment_like,
+        name="blog_comment_like",
     ),
 ]
 

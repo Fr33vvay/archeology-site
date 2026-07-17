@@ -1142,3 +1142,75 @@ a.nav-user:hover {
     align-items: flex-start;
   }
 }
+
+/* Блог */
+.blog-compose {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.blog-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.blog-post {
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.blog-post__actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.65rem 0;
+}
+
+.like-form {
+  display: inline-flex;
+}
+
+.like-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  padding: 0.35rem 0.7rem;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.like-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.like-button.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.blog-post .comment-list {
+  margin-top: 1rem;
+}
+
+.comments-toggle {
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0.35rem 0;
+  text-decoration: underline;
+}
+
+.comment-list--rest[hidden] {
+  display: none;
+}
