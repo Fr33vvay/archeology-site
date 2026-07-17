@@ -207,6 +207,9 @@ class Command(BaseCommand):
             articles_index.add_child(instance=a2)
             a2.save_revision().publish()
 
+        # После публикации статей сигнал мог добавить папки в галерею —
+        # обновляем numchild, иначе add_child падает на конфликте path.
+        gallery_index.refresh_from_db()
         folder = GalleryFolderPage.objects.child_of(gallery_index).filter(slug="demo-folder").first()
         if not folder:
             folder = GalleryFolderPage(
@@ -218,6 +221,8 @@ class Command(BaseCommand):
             )
             gallery_index.add_child(instance=folder)
             folder.save_revision().publish()
+        else:
+            folder = GalleryFolderPage.objects.get(pk=folder.pk)
 
         if folder.photos.count() == 0:
             GalleryPhoto.objects.create(page=folder, image=photo_a, caption="Находка", sort_order=0)
