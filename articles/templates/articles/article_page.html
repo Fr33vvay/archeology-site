@@ -70,6 +70,21 @@
         <h2 class="comments-panel__title">
           Комментарии{% if comments_count %} ({{ comments_count }}){% endif %}
         </h2>
+        {% if user.is_authenticated %}
+          <button
+            type="button"
+            class="comments-panel__compose-btn"
+            data-comments-compose
+            title="Написать комментарий"
+            aria-label="Написать комментарий"
+            aria-controls="comment-compose"
+            aria-expanded="{% if request.GET.compose %}true{% else %}false{% endif %}"
+          >
+            <svg class="comments-panel__compose-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M4 3h11a1 1 0 0 1 1 1v9.5l-3.2 3.2H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 2v10h6.7l1.3-1.3V5H5zm10.1 11.6 1.4-1.4 1.6 1.6-1.4 1.4-1.6-1.6zm2.1-2.1 1.4-1.4a1 1 0 0 1 1.4 0l.7.7a1 1 0 0 1 0 1.4l-1.4 1.4-2.1-2.1z"/>
+            </svg>
+          </button>
+        {% endif %}
         <button type="button" class="comments-panel__close" data-comments-close aria-label="Закрыть">×</button>
       </div>
 
@@ -81,21 +96,7 @@
         </ul>
       {% endif %}
 
-      {% if user.is_authenticated %}
-        <form class="comment-form" method="post" action="{% url 'comment_add' page.pk %}" enctype="multipart/form-data">
-          {% csrf_token %}
-          <label class="auth-label">
-            <span>{{ comment_form.body.label }}</span>
-            {{ comment_form.body }}
-          </label>
-          <label class="comment-images-field">
-            <span class="comment-images-field__label">Фото (до 3, каждое до 5 МБ)</span>
-            <input type="file" name="images" accept="image/jpeg,image/png,image/webp,image/gif" multiple data-comment-images>
-            <div class="comment-images-preview" data-comment-images-preview></div>
-          </label>
-          <button class="button" type="submit">Отправить</button>
-        </form>
-      {% else %}
+      {% if not user.is_authenticated %}
         <p class="muted comments-panel__login">
           <a href="{% url 'account_login' %}?next={{ request.path }}%23comments">Войдите</a>,
           чтобы оставить комментарий.
@@ -128,9 +129,9 @@
                   <ul class="comment-images">
                     {% for img in comment.images.all %}
                       <li>
-                        <a href="{{ img.image.url }}" class="comment-images__link" data-comment-lightbox>
+                        <button type="button" class="comment-images__link" data-comment-lightbox data-full-src="{{ img.image.url }}">
                           <img src="{{ img.image.url }}" alt="" class="comment-images__thumb" loading="lazy">
-                        </a>
+                        </button>
                       </li>
                     {% endfor %}
                   </ul>
@@ -188,9 +189,9 @@
                           <ul class="comment-images">
                             {% for img in reply.images.all %}
                               <li>
-                                <a href="{{ img.image.url }}" class="comment-images__link" data-comment-lightbox>
+                                <button type="button" class="comment-images__link" data-comment-lightbox data-full-src="{{ img.image.url }}">
                                   <img src="{{ img.image.url }}" alt="" class="comment-images__thumb" loading="lazy">
-                                </a>
+                                </button>
                               </li>
                             {% endfor %}
                           </ul>
@@ -210,6 +211,32 @@
         </ul>
       {% else %}
         <p class="muted">Пока нет комментариев.</p>
+      {% endif %}
+
+      {% if user.is_authenticated %}
+        <div
+          class="comment-compose{% if request.GET.compose %} is-open{% endif %}"
+          id="comment-compose"
+          data-comment-compose
+          {% if not request.GET.compose %}hidden{% endif %}
+        >
+          <form class="comment-form comment-form--compose" method="post" action="{% url 'comment_add' page.pk %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <label class="auth-label">
+              <span>{{ comment_form.body.label }}</span>
+              {{ comment_form.body }}
+            </label>
+            <label class="comment-images-field">
+              <span class="comment-images-field__label">Фото (до 3, каждое до 5 МБ)</span>
+              <input type="file" name="images" accept="image/jpeg,image/png,image/webp,image/gif" multiple data-comment-images>
+              <div class="comment-images-preview" data-comment-images-preview></div>
+            </label>
+            <div class="comment-compose__actions">
+              <button class="button" type="submit">Отправить</button>
+              <button type="button" class="comment-compose__cancel" data-comments-compose-cancel>Отмена</button>
+            </div>
+          </form>
+        </div>
       {% endif %}
 
       <button type="button" class="comments-panel__collapse button" data-comments-collapse>

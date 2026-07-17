@@ -42,25 +42,44 @@
   var closeBtn = document.querySelector("[data-comment-lightbox-close]");
   if (!dialog || !dialogImg) return;
 
-  document.addEventListener("click", function (event) {
-    var link = event.target.closest("[data-comment-lightbox]");
-    if (!link) return;
-    event.preventDefault();
-    dialogImg.src = link.getAttribute("href");
+  function openLightbox(src) {
+    if (!src) return;
+    var scrollY = window.scrollY;
+    dialogImg.src = src;
     if (typeof dialog.showModal === "function") {
       dialog.showModal();
+      // showModal часто сбрасывает прокрутку страницы — возвращаем
+      window.scrollTo(0, scrollY);
+      requestAnimationFrame(function () {
+        window.scrollTo(0, scrollY);
+      });
     } else {
-      window.open(link.getAttribute("href"), "_blank");
+      window.open(src, "_blank");
     }
+  }
+
+  document.addEventListener("click", function (event) {
+    var trigger = event.target.closest("[data-comment-lightbox]");
+    if (!trigger) return;
+    event.preventDefault();
+    event.stopPropagation();
+    var src =
+      trigger.getAttribute("data-full-src") || trigger.getAttribute("href");
+    openLightbox(src);
   });
 
   function closeLightbox() {
-    if (typeof dialog.close === "function") dialog.close();
+    var scrollY = window.scrollY;
+    if (typeof dialog.close === "function" && dialog.open) dialog.close();
     dialogImg.src = "";
+    window.scrollTo(0, scrollY);
   }
 
   if (closeBtn) closeBtn.addEventListener("click", closeLightbox);
   dialog.addEventListener("click", function (event) {
     if (event.target === dialog) closeLightbox();
+  });
+  dialog.addEventListener("close", function () {
+    dialogImg.src = "";
   });
 })();

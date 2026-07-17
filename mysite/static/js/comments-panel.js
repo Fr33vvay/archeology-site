@@ -65,15 +65,19 @@
     jumpToElement(panel);
   }
 
-  document.querySelectorAll("form.comment-form, form.comment-form--reply, form.comment-delete").forEach(function (form) {
-    form.addEventListener("submit", function () {
-      try {
-        sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
-      } catch (e) {
-        /* ignore */
-      }
+  document
+    .querySelectorAll(
+      "form.comment-form, form.comment-form--reply, form.comment-form--compose, form.comment-form--edit, form.comment-delete"
+    )
+    .forEach(function (form) {
+      form.addEventListener("submit", function () {
+        try {
+          sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+        } catch (e) {
+          /* ignore */
+        }
+      });
     });
-  });
 
   function restoreScroll() {
     var raw = null;
@@ -94,6 +98,70 @@
     });
   }
 
+  var composeBox = panel.querySelector("[data-comment-compose]");
+  var composeBtn = panel.querySelector("[data-comments-compose]");
+  var composeCancel = panel.querySelector("[data-comments-compose-cancel]");
+
+  function scrollDrawerToBottom() {
+    if (drawer && drawer.scrollHeight > drawer.clientHeight) {
+      drawer.scrollTop = drawer.scrollHeight;
+      return;
+    }
+    if (composeBox) {
+      composeBox.scrollIntoView({ block: "nearest", behavior: "auto" });
+    }
+  }
+
+  function openCompose() {
+    if (!composeBox) return;
+    composeBox.hidden = false;
+    composeBox.classList.add("is-open");
+    if (composeBtn) composeBtn.setAttribute("aria-expanded", "true");
+    scrollDrawerToBottom();
+    var textarea = composeBox.querySelector("textarea");
+    if (textarea) {
+      window.requestAnimationFrame(function () {
+        scrollDrawerToBottom();
+        textarea.focus({ preventScroll: true });
+      });
+    }
+  }
+
+  function closeCompose() {
+    if (!composeBox) return;
+    composeBox.hidden = true;
+    composeBox.classList.remove("is-open");
+    if (composeBtn) composeBtn.setAttribute("aria-expanded", "false");
+  }
+
+  if (composeBtn) {
+    composeBtn.addEventListener("click", function () {
+      if (composeBox && !composeBox.hidden) {
+        closeCompose();
+        return;
+      }
+      openCompose();
+    });
+  }
+  if (composeCancel) {
+    composeCancel.addEventListener("click", closeCompose);
+  }
+
+  function handlePostedOrCompose() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get("compose") === "1") {
+      openCompose();
+    } else if (params.get("posted") === "1") {
+      var last = panel.querySelector(".comment-list > .comment:last-child");
+      if (last && drawer) {
+        last.scrollIntoView({ block: "nearest", behavior: "auto" });
+        drawer.scrollTop = drawer.scrollHeight;
+      } else {
+        scrollDrawerToBottom();
+      }
+    }
+  }
+
   openBtn.addEventListener("click", openPanel);
   if (closeBtn) closeBtn.addEventListener("click", closePanel);
   if (collapseBtn) collapseBtn.addEventListener("click", collapseAndGoUp);
@@ -106,9 +174,12 @@
   }
 
   document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape" && panel.classList.contains("is-open") && !isMobile()) {
-      closePanel();
+    if (event.key !== "Escape" || !panel.classList.contains("is-open") || isMobile()) {
+      return;
     }
+    // Не закрывать панель, если открыт просмотр фото
+    if (document.querySelector("dialog[open]")) return;
+    closePanel();
   });
 
   var openedFromServer =
@@ -117,12 +188,14 @@
 
   if (openedFromServer) {
     restoreScroll();
+    handlePostedOrCompose();
     return;
   }
 
   if (isMobile()) {
     openPanel();
     restoreScroll();
+    handlePostedOrCompose();
     return;
   }
 
@@ -132,5 +205,6 @@
   ) {
     openPanel();
     restoreScroll();
+    handlePostedOrCompose();
   }
 })();

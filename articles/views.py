@@ -16,9 +16,14 @@ def _form_error_messages(form, fallback="Не удалось отправить 
     return errors or [fallback]
 
 
-def _redirect_to_comments(request, article):
+def _redirect_to_comments(request, article, *, compose=False, posted=False):
     # Без #comments — иначе браузер скроллит к панели и сбивает место в статье
-    return redirect(article.get_url(request) + "?comments=1")
+    params = ["comments=1"]
+    if compose:
+        params.append("compose=1")
+    if posted:
+        params.append("posted=1")
+    return redirect(article.get_url(request) + "?" + "&".join(params))
 
 
 @login_required
@@ -34,12 +39,13 @@ def add_comment(request, page_id):
         form._save_images(comment)
         if comment.parent_id:
             messages.success(request, "Ответ опубликован.")
-        else:
-            messages.success(request, "Комментарий опубликован.")
-    else:
-        for err in _form_error_messages(form):
-            messages.error(request, err)
-    return _redirect_to_comments(request, article)
+            return _redirect_to_comments(request, article)
+        messages.success(request, "Комментарий опубликован.")
+        # После своего комментария — к низу ленты, чтобы увидеть публикацию
+        return _redirect_to_comments(request, article, posted=True)
+    for err in _form_error_messages(form):
+        messages.error(request, err)
+    return _redirect_to_comments(request, article, compose=True)
 
 
 @login_required
