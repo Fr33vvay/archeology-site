@@ -6,8 +6,8 @@
   --line: #d8d0c4;
   --accent: #6b4f2a;
   --accent-soft: #efe6d6;
-  --max: 720px;
-  --wide: 1040px;
+  --max: 864px; /* было 720px, +20% ширины текста на десктопе */
+  --wide: 1200px;
   --serif: "Source Serif 4", "Literata", "PT Serif", Georgia, serif;
   --sans: "Source Sans 3", "PT Sans", "Segoe UI", sans-serif;
 }
@@ -20,6 +20,7 @@
 
 html {
   font-size: 18px;
+  scroll-padding-top: 5.5rem;
 }
 
 body {
@@ -283,7 +284,7 @@ a:hover {
 
   /* Раскрытие: статья слева, комментарии забирают всё оставшееся место справа */
   .article-with-comments.is-comments-open {
-    grid-template-columns: minmax(0, 560px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 672px) minmax(0, 1fr);
     column-gap: 2.5rem;
   }
 
@@ -1038,13 +1039,14 @@ a.button {
   text-decoration: none;
 }
 
-.nav-user {
+a.nav-user {
   color: var(--muted);
   font-size: 0.9rem;
-  max-width: 12rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-decoration: none;
+}
+
+a.nav-user:hover {
+  color: var(--accent);
 }
 
 .auth-box {

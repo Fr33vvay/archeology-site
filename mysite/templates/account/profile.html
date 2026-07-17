@@ -1,0 +1,33 @@
+{% extends "account/base_manage.html" %}
+
+{% block title %}Профиль{% endblock %}
+
+{% block auth_content %}
+<h1 class="page-title">Профиль</h1>
+<p class="lede">Имя видно в комментариях. Почту сменить здесь нельзя.</p>
+
+{% if messages %}
+  <ul class="comment-messages">
+    {% for message in messages %}
+      <li class="comment-messages__item{% if message.tags %} comment-messages__item--{{ message.tags }}{% endif %}">{{ message }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<form class="auth-form" method="post" action="{% url 'account_profile' %}">
+  {% csrf_token %}
+  <label class="auth-label">
+    <span>Электронная почта</span>
+    <input type="email" value="{{ profile_email }}" disabled readonly>
+  </label>
+  {{ form.non_field_errors }}
+  {% for field in form %}
+    <label class="auth-label">
+      <span>{{ field.label }}{% if field.field.required %} *{% endif %}</span>
+      {{ field }}
+      {% if field.errors %}<span class="auth-error">{{ field.errors|striptags }}</span>{% endif %}
+    </label>
+  {% endfor %}
+  <button class="button" type="submit">Сохранить</button>
+</form>
+{% endblock %}

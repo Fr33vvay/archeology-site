@@ -199,6 +199,9 @@ class Comment(models.Model):
 
     @property
     def author_label(self) -> str:
+        full_name = self.author.get_full_name().strip()
+        if full_name:
+            return full_name
         if self.author.email:
             return self.author.email
         return self.author.get_username()

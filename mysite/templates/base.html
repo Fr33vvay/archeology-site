@@ -28,7 +28,7 @@
         <a href="{% url 'search' %}">Поиск</a>
         {% block nav_comments %}{% endblock %}
         {% if user.is_authenticated %}
-          <span class="nav-user">{{ user.email|default:user.username }}</span>
+          <a href="{% url 'account_profile' %}" class="nav-user">Профиль</a>
           <a href="{% url 'account_logout' %}">Выход</a>
         {% else %}
           <a href="{% url 'account_login' %}">Вход</a>

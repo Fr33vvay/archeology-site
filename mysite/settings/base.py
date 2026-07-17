@@ -95,6 +95,9 @@ AUTHENTICATION_BACKENDS = [
 ACCOUNT_ADAPTER = "accounts.adapters.AccountAdapter"
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+ACCOUNT_FORMS = {
+    "signup": "accounts.forms.CustomSignupForm",
+}
 ACCOUNT_EMAIL_VERIFICATION = "optional"
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_LOGOUT_ON_GET = False
