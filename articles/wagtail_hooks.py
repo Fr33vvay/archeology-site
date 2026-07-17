@@ -59,11 +59,11 @@ class CommentViewSet(SnippetViewSet):
     ]
 
     def get_queryset(self, request):
+        # У SnippetViewSet super().get_queryset() по умолчанию возвращает None
         return (
-            super()
-            .get_queryset(request)
-            .select_related("article", "author")
+            Comment.objects.select_related("article", "author")
             .prefetch_related("images")
+            .all()
         )
 
 
