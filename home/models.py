@@ -34,6 +34,7 @@ class HomePage(Page):
     subpage_types = [
         "articles.ArticleIndexPage",
         "gallery.GalleryIndexPage",
+        "home.AuthorPage",
         "home.ContactPage",
     ]
 
@@ -47,6 +48,33 @@ class HomePage(Page):
             ArticlePage.objects.live().public().order_by("-first_published_at")[:3]
         )
         return context
+
+
+class AuthorPage(Page):
+    """Страница «Об авторе» с портретом и биографическим текстом."""
+
+    portrait = models.ForeignKey(
+        "wagtailimages.Image",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        verbose_name="Фотография",
+    )
+    body = RichTextField(verbose_name="Текст")
+
+    content_panels = Page.content_panels + [
+        FieldPanel("portrait"),
+        FieldPanel("body"),
+    ]
+
+    parent_page_types = ["home.HomePage"]
+    subpage_types = []
+    max_count = 1
+
+    class Meta:
+        verbose_name = "Об авторе"
+        verbose_name_plural = "Об авторе"
 
 
 class ContactPage(Page):

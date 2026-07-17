@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags wagtailimages_tags %}
+
+{% block content %}
+<article class="article author-page">
+  <h1 class="page-title">{{ page.title }}</h1>
+
+  <div class="author-layout">
+    {% if page.portrait %}
+      <figure class="author-portrait">
+        {% image page.portrait width-640 as portrait %}
+        <img src="{{ portrait.url }}" alt="{{ page.portrait.title }}" width="{{ portrait.width }}" height="{{ portrait.height }}">
+      </figure>
+    {% endif %}
+    <div class="author-body article-body">
+      {{ page.body|richtext }}
+    </div>
+  </div>
+</article>
+{% endblock %}

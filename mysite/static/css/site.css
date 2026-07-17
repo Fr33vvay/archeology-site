@@ -339,6 +339,43 @@ a:hover {
   margin: 0 0 0.6rem;
 }
 
+.author-layout {
+  display: grid;
+  gap: 1.75rem;
+  align-items: start;
+}
+
+@media (min-width: 720px) {
+  .author-layout {
+    grid-template-columns: minmax(200px, 280px) 1fr;
+  }
+
+  .author-portrait {
+    grid-row: 1 / span 2;
+  }
+}
+
+.author-portrait {
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.author-portrait img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.author-body p {
+  margin: 0 0 1.1rem;
+}
+
+.author-body p:last-child {
+  margin-bottom: 0;
+}
+
 .search-form {
   display: flex;
   gap: 0.5rem;
