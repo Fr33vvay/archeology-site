@@ -20,12 +20,13 @@ def _form_error_messages(form):
 @require_POST
 def add_comment(request, page_id):
     article = get_object_or_404(ArticlePage.objects.live().public(), pk=page_id)
-    form = CommentForm(request.POST, article=article)
+    form = CommentForm(request.POST, request.FILES, article=article)
     if form.is_valid():
         comment = form.save(commit=False)
         comment.article = article
         comment.author = request.user
         comment.save()
+        form._save_images(comment)
         if comment.parent_id:
             messages.success(request, "Ответ опубликован.")
         else:

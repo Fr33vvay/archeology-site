@@ -1,14 +1,24 @@
 """Тесты комментариев к статьям."""
 
+import io
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
+from PIL import Image
 from wagtail.models import Page, Site
 
-from articles.models import ArticleIndexPage, ArticlePage, Comment
+from articles.models import ArticleIndexPage, ArticlePage, Comment, CommentImage
 from home.models import HomePage
 
 User = get_user_model()
+
+
+def _png_upload(name="pic.png", size=(20, 20)):
+    buf = io.BytesIO()
+    Image.new("RGB", size, color=(180, 40, 40)).save(buf, format="PNG")
+    return SimpleUploadedFile(name, buf.getvalue(), content_type="image/png")
 
 
 class CommentModelTests(TestCase):
@@ -155,3 +165,49 @@ class CommentViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         c.refresh_from_db()
         self.assertTrue(c.is_deleted)
+
+    @override_settings(MEDIA_ROOT="/tmp/archeology-test-media")
+    def test_post_with_images(self):
+        """К комментарию можно прикрепить до трёх изображений."""
+        self.client.login(username="commenter", password="pass-12345")
+        url = f"/comments/add/{self.article.pk}/"
+        response = self.client.post(
+            url,
+            {
+                "body": "С фото",
+                "images": [_png_upload("a.png"), _png_upload("b.png")],
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        comment = Comment.objects.get(article=self.article, body="С фото")
+        self.assertEqual(comment.images.count(), 2)
+
+    @override_settings(MEDIA_ROOT="/tmp/archeology-test-media")
+    def test_image_only_comment(self):
+        """Комментарий только с фото без текста допускается."""
+        self.client.login(username="commenter", password="pass-12345")
+        url = f"/comments/add/{self.article.pk}/"
+        response = self.client.post(url, {"body": "", "images": [_png_upload()]})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Comment.objects.filter(article=self.article).count(), 1)
+        self.assertEqual(CommentImage.objects.count(), 1)
+
+    @override_settings(MEDIA_ROOT="/tmp/archeology-test-media")
+    def test_rejects_more_than_three_images(self):
+        """Больше трёх изображений отклоняется."""
+        self.client.login(username="commenter", password="pass-12345")
+        url = f"/comments/add/{self.article.pk}/"
+        response = self.client.post(
+            url,
+            {
+                "body": "Много фото",
+                "images": [
+                    _png_upload("1.png"),
+                    _png_upload("2.png"),
+                    _png_upload("3.png"),
+                    _png_upload("4.png"),
+                ],
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Comment.objects.filter(article=self.article).count(), 0)

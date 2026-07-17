@@ -106,14 +106,20 @@ class ArticlePage(Page):
         context = super().get_context(request, *args, **kwargs)
         from articles.forms import CommentForm
 
+        images_qs = CommentImage.objects.order_by("sort_order", "id")
         roots = (
             Comment.objects.filter(article=self, parent__isnull=True)
             .select_related("author")
             .prefetch_related(
+                models.Prefetch("images", queryset=images_qs),
                 models.Prefetch(
                     "replies",
-                    queryset=Comment.objects.select_related("author").order_by("created_at"),
-                )
+                    queryset=(
+                        Comment.objects.select_related("author")
+                        .prefetch_related(models.Prefetch("images", queryset=images_qs))
+                        .order_by("created_at")
+                    ),
+                ),
             )
             .order_by("created_at")
         )
@@ -146,7 +152,7 @@ class Comment(models.Model):
         related_name="replies",
         verbose_name="Ответ на",
     )
-    body = models.TextField("Текст", max_length=5000)
+    body = models.TextField("Текст", max_length=5000, blank=True)
     created_at = models.DateTimeField("Создан", auto_now_add=True)
     is_deleted = models.BooleanField("Удалён", default=False)
 
@@ -189,3 +195,24 @@ class Comment(models.Model):
         if self.author.email:
             return self.author.email
         return self.author.get_username()
+
+
+class CommentImage(models.Model):
+    """Иллюстрация к комментарию (не больше трёх на один комментарий)."""
+
+    comment = models.ForeignKey(
+        Comment,
+        on_delete=models.CASCADE,
+        related_name="images",
+        verbose_name="Комментарий",
+    )
+    image = models.ImageField("Изображение", upload_to="comment_images/%Y/%m/")
+    sort_order = models.PositiveSmallIntegerField("Порядок", default=0)
+
+    class Meta:
+        verbose_name = "Изображение комментария"
+        verbose_name_plural = "Изображения комментариев"
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return f"Рис. к комментарию #{self.comment_id}"

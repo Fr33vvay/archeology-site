@@ -49,8 +49,12 @@
               <span class="comments-panel__preview-author">{{ comment.author_label }}</span>
               {% if comment.is_deleted %}
                 <span class="comments-panel__preview-text comments-panel__preview-text--muted">Комментарий удалён</span>
-              {% else %}
+              {% elif comment.body %}
                 <span class="comments-panel__preview-text">{{ comment.body|truncatechars:90 }}</span>
+              {% elif comment.images.all %}
+                <span class="comments-panel__preview-text">Фото</span>
+              {% else %}
+                <span class="comments-panel__preview-text comments-panel__preview-text--muted">Без текста</span>
               {% endif %}
             </li>
           {% endfor %}
@@ -78,11 +82,16 @@
       {% endif %}
 
       {% if user.is_authenticated %}
-        <form class="comment-form" method="post" action="{% url 'comment_add' page.pk %}">
+        <form class="comment-form" method="post" action="{% url 'comment_add' page.pk %}" enctype="multipart/form-data">
           {% csrf_token %}
           <label class="auth-label">
             <span>{{ comment_form.body.label }}</span>
             {{ comment_form.body }}
+          </label>
+          <label class="comment-images-field">
+            <span class="comment-images-field__label">Фото (до 3, каждое до 5 МБ)</span>
+            <input type="file" name="images" accept="image/jpeg,image/png,image/webp,image/gif" multiple data-comment-images>
+            <div class="comment-images-preview" data-comment-images-preview></div>
           </label>
           <button class="button" type="submit">Отправить</button>
         </form>
@@ -112,19 +121,37 @@
               {% if comment.is_deleted %}
                 <p class="comment__body comment__body--deleted">Комментарий удалён</p>
               {% else %}
-                <p class="comment__body">{{ comment.body|linebreaksbr }}</p>
+                {% if comment.body %}
+                  <p class="comment__body">{{ comment.body|linebreaksbr }}</p>
+                {% endif %}
+                {% if comment.images.all %}
+                  <ul class="comment-images">
+                    {% for img in comment.images.all %}
+                      <li>
+                        <a href="{{ img.image.url }}" class="comment-images__link" data-comment-lightbox>
+                          <img src="{{ img.image.url }}" alt="" class="comment-images__thumb" loading="lazy">
+                        </a>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% endif %}
               {% endif %}
 
               <div class="comment__actions">
                 {% if not comment.is_deleted and user.is_authenticated %}
                   <details class="comment-reply">
                     <summary>Ответить</summary>
-                    <form class="comment-form comment-form--reply" method="post" action="{% url 'comment_add' page.pk %}">
+                    <form class="comment-form comment-form--reply" method="post" action="{% url 'comment_add' page.pk %}" enctype="multipart/form-data">
                       {% csrf_token %}
                       <input type="hidden" name="parent_id" value="{{ comment.pk }}">
                       <label class="auth-label">
                         <span>Ответ</span>
-                        <textarea name="body" rows="10" class="comment-textarea" required placeholder="Ваш ответ"></textarea>
+                        <textarea name="body" rows="10" class="comment-textarea" placeholder="Ваш ответ"></textarea>
+                      </label>
+                      <label class="comment-images-field">
+                        <span class="comment-images-field__label">Фото (до 3, каждое до 5 МБ)</span>
+                        <input type="file" name="images" accept="image/jpeg,image/png,image/webp,image/gif" multiple data-comment-images>
+                        <div class="comment-images-preview" data-comment-images-preview></div>
                       </label>
                       <button class="button" type="submit">Ответить</button>
                     </form>
@@ -151,7 +178,20 @@
                       {% if reply.is_deleted %}
                         <p class="comment__body comment__body--deleted">Комментарий удалён</p>
                       {% else %}
-                        <p class="comment__body">{{ reply.body|linebreaksbr }}</p>
+                        {% if reply.body %}
+                          <p class="comment__body">{{ reply.body|linebreaksbr }}</p>
+                        {% endif %}
+                        {% if reply.images.all %}
+                          <ul class="comment-images">
+                            {% for img in reply.images.all %}
+                              <li>
+                                <a href="{{ img.image.url }}" class="comment-images__link" data-comment-lightbox>
+                                  <img src="{{ img.image.url }}" alt="" class="comment-images__thumb" loading="lazy">
+                                </a>
+                              </li>
+                            {% endfor %}
+                          </ul>
+                        {% endif %}
                       {% endif %}
                     </li>
                   {% endfor %}
@@ -174,5 +214,10 @@
 {% endblock %}
 
 {% block extra_js %}
+<dialog class="comment-lightbox" data-comment-lightbox-dialog>
+  <button type="button" class="comment-lightbox__close" data-comment-lightbox-close aria-label="Закрыть">×</button>
+  <img src="" alt="" class="comment-lightbox__img" data-comment-lightbox-img>
+</dialog>
 <script src="{% static 'js/comments-panel.js' %}"></script>
+<script src="{% static 'js/comment-images.js' %}"></script>
 {% endblock %}
