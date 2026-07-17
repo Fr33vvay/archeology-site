@@ -26,6 +26,7 @@
           <a href="{% pageurl item %}" {% if page and item.url in page.url %}class="is-active"{% endif %}>{{ item.title }}</a>
         {% endfor %}
         <a href="{% url 'search' %}">Поиск</a>
+        {% block nav_comments %}{% endblock %}
         {% if user.is_authenticated %}
           <span class="nav-user">{{ user.email|default:user.username }}</span>
           <a href="{% url 'account_logout' %}">Выход</a>

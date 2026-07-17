@@ -1,14 +1,22 @@
 (function () {
   var SCROLL_KEY = "archeologyArticleScrollY";
+  var MOBILE_MAX = 1039;
 
   var panel = document.querySelector("[data-comments-panel]");
   if (!panel) return;
 
   var layout = document.querySelector("[data-article-layout]");
+  var articleTop = document.querySelector("[data-article-top]");
   var openBtn = panel.querySelector("[data-comments-open]");
   var closeBtn = panel.querySelector("[data-comments-close]");
+  var collapseBtn = panel.querySelector("[data-comments-collapse]");
   var drawer = panel.querySelector("[data-comments-drawer]");
+  var navLink = document.querySelector("[data-comments-nav]");
   if (!openBtn || !drawer) return;
+
+  function isMobile() {
+    return window.matchMedia("(max-width: " + MOBILE_MAX + "px)").matches;
+  }
 
   function openPanel() {
     panel.classList.add("is-open");
@@ -34,7 +42,23 @@
     }
   }
 
-  // Перед отправкой комментария запоминаем, где читали статью
+  function collapseAndGoUp() {
+    closePanel();
+    var target = articleTop || document.querySelector(".site-header");
+    if (target && target.scrollIntoView) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
+  function scrollToComments() {
+    openPanel();
+    window.requestAnimationFrame(function () {
+      panel.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   document.querySelectorAll("form.comment-form, form.comment-form--reply, form.comment-delete").forEach(function (form) {
     form.addEventListener("submit", function () {
       try {
@@ -56,7 +80,6 @@
     if (raw === null) return;
     var y = parseInt(raw, 10);
     if (isNaN(y)) return;
-    // После раскладки с открытой панелью
     window.requestAnimationFrame(function () {
       window.scrollTo(0, y);
       window.requestAnimationFrame(function () {
@@ -67,9 +90,17 @@
 
   openBtn.addEventListener("click", openPanel);
   if (closeBtn) closeBtn.addEventListener("click", closePanel);
+  if (collapseBtn) collapseBtn.addEventListener("click", collapseAndGoUp);
+
+  if (navLink) {
+    navLink.addEventListener("click", function (event) {
+      event.preventDefault();
+      scrollToComments();
+    });
+  }
 
   document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape" && panel.classList.contains("is-open")) {
+    if (event.key === "Escape" && panel.classList.contains("is-open") && !isMobile()) {
       closePanel();
     }
   });
@@ -79,6 +110,13 @@
     (layout && layout.classList.contains("is-comments-open"));
 
   if (openedFromServer) {
+    restoreScroll();
+    return;
+  }
+
+  // На мобилках комментарии сразу раскрыты (форма, ответы, список)
+  if (isMobile()) {
+    openPanel();
     restoreScroll();
     return;
   }

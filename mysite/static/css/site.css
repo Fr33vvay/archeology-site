@@ -110,6 +110,19 @@ a:hover {
   color: var(--ink);
 }
 
+/* Кнопка «Комментарии» в шапке — только на узких экранах и страницах статей */
+.nav-comments {
+  display: none;
+}
+
+@media (max-width: 1039px) {
+  .nav-comments {
+    display: inline;
+    font-weight: 600;
+    color: var(--accent);
+  }
+}
+
 .site-main {
   padding: 2.5rem 0 4rem;
 }
@@ -429,6 +442,33 @@ a:hover {
   border-top: 1px solid var(--line);
 }
 
+.comments-panel__collapse {
+  display: none;
+  width: 100%;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 1039px) {
+  /* На мобилках крестик в шапке панели не нужен — есть «Свернуть» внизу */
+  .comments-panel__close {
+    display: none;
+  }
+
+  .comments-panel.is-open .comments-panel__collapse {
+    display: block;
+  }
+
+  .comments-panel__drawer {
+    border: none;
+    padding: 0;
+    background: transparent;
+  }
+
+  .comments-panel__drawer-head {
+    margin-bottom: 1rem;
+  }
+}
+
 @media (min-width: 1040px) {
   .comments-panel {
     margin-top: 0;
@@ -437,6 +477,10 @@ a:hover {
     position: sticky;
     top: 5.5rem;
     max-height: calc(100vh - 6.5rem);
+  }
+
+  .comments-panel__collapse {
+    display: none !important;
   }
 }
 

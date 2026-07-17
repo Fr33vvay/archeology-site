@@ -1,10 +1,16 @@
 {% extends "base.html" %}
 {% load static wagtailcore_tags wagtailimages_tags %}
 
+{% block nav_comments %}
+<a href="#comments" class="nav-comments" data-comments-nav>
+  Комментарии{% if comments_count %} ({{ comments_count }}){% endif %}
+</a>
+{% endblock %}
+
 {% block content %}
 {% with comments_open=request.GET.comments %}
 <div class="article-with-comments{% if comments_open %} is-comments-open{% endif %}" data-article-layout>
-  <article class="article">
+  <article class="article" data-article-top>
     <p class="meta">
       {% if page.first_published_at %}{{ page.first_published_at|date:"d E Y" }}{% endif %}
     </p>
@@ -157,6 +163,10 @@
       {% else %}
         <p class="muted">Пока нет комментариев.</p>
       {% endif %}
+
+      <button type="button" class="comments-panel__collapse button" data-comments-collapse>
+        Свернуть
+      </button>
     </div>
   </aside>
 </div>
@@ -164,5 +174,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/comments-panel.js' %}" defer></script>
+<script src="{% static 'js/comments-panel.js' %}"></script>
 {% endblock %}
