@@ -139,6 +139,9 @@
 
               <div class="comment__actions">
                 {% if not comment.is_deleted and user.is_authenticated %}
+                  {% if comment.author_id == user.id %}
+                    {% include "articles/includes/comment_edit_form.html" with comment=comment %}
+                  {% endif %}
                   <details class="comment-reply">
                     <summary>Ответить</summary>
                     <form class="comment-form comment-form--reply" method="post" action="{% url 'comment_add' page.pk %}" enctype="multipart/form-data">
@@ -191,6 +194,11 @@
                               </li>
                             {% endfor %}
                           </ul>
+                        {% endif %}
+                        {% if user.is_authenticated and reply.author_id == user.id %}
+                          <div class="comment__actions">
+                            {% include "articles/includes/comment_edit_form.html" with comment=reply %}
+                          </div>
                         {% endif %}
                       {% endif %}
                     </li>

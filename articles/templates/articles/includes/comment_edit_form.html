@@ -1,0 +1,32 @@
+<details class="comment-edit">
+  <summary>Изменить</summary>
+  <form class="comment-form comment-form--edit" method="post" action="{% url 'comment_edit' comment.pk %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label class="auth-label">
+      <span>Текст</span>
+      <textarea name="body" rows="4" class="comment-textarea" placeholder="Ваш комментарий">{{ comment.body }}</textarea>
+    </label>
+    {% if comment.images.all %}
+      <div class="comment-edit-images">
+        <span class="comment-images-field__label">Текущие фото — отметьте, чтобы удалить</span>
+        <ul class="comment-edit-images__list">
+          {% for img in comment.images.all %}
+            <li class="comment-edit-images__item">
+              <label class="comment-edit-images__label">
+                <input type="checkbox" name="remove_images" value="{{ img.pk }}" class="comment-edit-images__check">
+                <img src="{{ img.image.url }}" alt="" class="comment-edit-images__thumb" loading="lazy">
+                <span class="comment-edit-images__mark" aria-hidden="true">×</span>
+              </label>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+    <label class="comment-images-field">
+      <span class="comment-images-field__label">Добавить фото (всего до 3)</span>
+      <input type="file" name="images" accept="image/jpeg,image/png,image/webp,image/gif" multiple data-comment-images>
+      <div class="comment-images-preview" data-comment-images-preview></div>
+    </label>
+    <button class="button" type="submit">Сохранить</button>
+  </form>
+</details>

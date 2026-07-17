@@ -709,17 +709,96 @@ a:hover {
 }
 
 /* details в flex по умолчанию сжимается по контенту — растягиваем на всю колонку */
-.comment-reply {
+.comment-reply,
+.comment-edit {
   display: block;
   width: 100%;
   min-width: 0;
 }
 
-.comment-reply summary {
+.comment-reply summary,
+.comment-edit summary {
   cursor: pointer;
   color: var(--accent);
   font-size: 0.85rem;
   width: fit-content;
+}
+
+.comment-edit + .comment-reply {
+  margin-top: 0.35rem;
+}
+
+.comment-form--edit {
+  margin-top: 0.85rem;
+}
+
+.comment-edit-images {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.comment-edit-images__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.comment-edit-images__item {
+  margin: 0;
+}
+
+.comment-edit-images__label {
+  position: relative;
+  display: block;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.comment-edit-images__check {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.comment-edit-images__thumb {
+  width: 5.5rem;
+  height: 5.5rem;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  background: #f6f4ef;
+}
+
+.comment-edit-images__mark {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.25rem;
+  width: 1.35rem;
+  height: 1.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 1.1rem;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.comment-edit-images__check:checked + .comment-edit-images__thumb {
+  opacity: 0.35;
+}
+
+.comment-edit-images__check:checked ~ .comment-edit-images__mark {
+  background: #8b2e2e;
+  opacity: 1;
+}
+
+.comment-edit-images__label:hover .comment-edit-images__mark {
+  opacity: 1;
 }
 
 .comment-delete__btn {

@@ -7,10 +7,10 @@ MAX_IMAGE_BYTES = 5 * 1024 * 1024
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 
 
-def validate_comment_images(files):
+def validate_comment_images(files, max_count=MAX_COMMENT_IMAGES):
     """Проверяет список загруженных файлов; возвращает очищенный список."""
     images = [f for f in files if f]
-    if len(images) > MAX_COMMENT_IMAGES:
+    if len(images) > max_count:
         raise forms.ValidationError(
             f"Можно прикрепить не больше {MAX_COMMENT_IMAGES} изображений."
         )
@@ -111,3 +111,90 @@ class CommentForm(forms.ModelForm):
                 image=uploaded,
                 sort_order=index,
             )
+
+
+class CommentEditForm(forms.Form):
+    body = forms.CharField(
+        required=False,
+        label="Комментарий",
+        widget=forms.Textarea(
+            attrs={
+                "rows": 4,
+                "class": "comment-textarea",
+                "placeholder": "Ваш комментарий",
+            }
+        ),
+    )
+
+    def __init__(self, *args, comment=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.comment = comment
+        self.cleaned_images = []
+        self.remove_image_ids = set()
+        self.kept_images = []
+
+    def clean_body(self):
+        return (self.cleaned_data.get("body") or "").strip()
+
+    def clean(self):
+        cleaned = super().clean()
+        if self.comment is None:
+            raise forms.ValidationError("Не указан комментарий.")
+
+        body = cleaned.get("body") or ""
+        existing = list(self.comment.images.all())
+        existing_ids = {img.pk for img in existing}
+
+        raw_ids = self.data.getlist("remove_images")
+        remove_ids = set()
+        for raw in raw_ids:
+            try:
+                image_id = int(raw)
+            except (TypeError, ValueError):
+                continue
+            if image_id in existing_ids:
+                remove_ids.add(image_id)
+
+        kept = [img for img in existing if img.pk not in remove_ids]
+        slots = MAX_COMMENT_IMAGES - len(kept)
+        files = self.files.getlist("images") if self.files else []
+        try:
+            new_images = validate_comment_images(files, max_count=max(slots, 0))
+        except forms.ValidationError as exc:
+            self.add_error(None, exc)
+            new_images = []
+
+        if slots < 0:
+            self.add_error(None, "Можно оставить не больше трёх изображений.")
+        elif len(files) > slots:
+            # validate уже кинет при max_count, но на всякий случай
+            pass
+
+        if not body and not kept and not new_images:
+            raise forms.ValidationError(
+                "Оставьте текст или хотя бы одно изображение."
+            )
+
+        self.remove_image_ids = remove_ids
+        self.kept_images = kept
+        self.cleaned_images = new_images
+        return cleaned
+
+    def save(self):
+        comment = self.comment
+        comment.body = self.cleaned_data.get("body") or ""
+        comment.save(update_fields=["body"], skip_validation=True)
+
+        for image in comment.images.filter(pk__in=self.remove_image_ids):
+            image.delete()
+
+        next_order = 0
+        if self.kept_images:
+            next_order = max(img.sort_order for img in self.kept_images) + 1
+        for offset, uploaded in enumerate(self.cleaned_images):
+            CommentImage.objects.create(
+                comment=comment,
+                image=uploaded,
+                sort_order=next_order + offset,
+            )
+        return comment

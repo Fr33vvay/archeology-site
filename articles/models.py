@@ -190,6 +190,13 @@ class Comment(models.Model):
             return False
         return user.is_staff or user.pk == self.author_id
 
+    def can_edit(self, user) -> bool:
+        if not user or not user.is_authenticated:
+            return False
+        if self.is_deleted:
+            return False
+        return user.pk == self.author_id
+
     @property
     def author_label(self) -> str:
         if self.author.email:
@@ -216,3 +223,11 @@ class CommentImage(models.Model):
 
     def __str__(self):
         return f"Рис. к комментарию #{self.comment_id}"
+
+    def delete(self, *args, **kwargs):
+        storage = self.image.storage
+        name = self.image.name
+        result = super().delete(*args, **kwargs)
+        if name:
+            storage.delete(name)
+        return result

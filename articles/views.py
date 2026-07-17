@@ -4,16 +4,21 @@ from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 
-from articles.forms import CommentForm
+from articles.forms import CommentEditForm, CommentForm
 from articles.models import ArticlePage, Comment
 
 
-def _form_error_messages(form):
+def _form_error_messages(form, fallback="Не удалось отправить комментарий."):
     errors = []
     for field, field_errors in form.errors.items():
         for err in field_errors:
             errors.append(str(err))
-    return errors or ["Не удалось отправить комментарий."]
+    return errors or [fallback]
+
+
+def _redirect_to_comments(request, article):
+    # Без #comments — иначе браузер скроллит к панели и сбивает место в статье
+    return redirect(article.get_url(request) + "?comments=1")
 
 
 @login_required
@@ -34,8 +39,29 @@ def add_comment(request, page_id):
     else:
         for err in _form_error_messages(form):
             messages.error(request, err)
-    # Без #comments — иначе браузер скроллит к панели и сбивает место в статье
-    return redirect(article.get_url(request) + "?comments=1")
+    return _redirect_to_comments(request, article)
+
+
+@login_required
+@require_POST
+def edit_comment(request, comment_id):
+    comment = get_object_or_404(
+        Comment.objects.select_related("article").prefetch_related("images"),
+        pk=comment_id,
+    )
+    if not comment.can_edit(request.user):
+        return HttpResponseForbidden("Недостаточно прав для редактирования.")
+    article = comment.article
+    if not article.live:
+        raise Http404
+    form = CommentEditForm(request.POST, request.FILES, comment=comment)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Комментарий обновлён.")
+    else:
+        for err in _form_error_messages(form, "Не удалось сохранить изменения."):
+            messages.error(request, err)
+    return _redirect_to_comments(request, article)
 
 
 @login_required
@@ -49,4 +75,4 @@ def delete_comment(request, comment_id):
         raise Http404
     comment.soft_delete()
     messages.success(request, "Комментарий удалён.")
-    return redirect(article.get_url(request) + "?comments=1")
+    return _redirect_to_comments(request, article)

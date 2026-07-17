@@ -17,6 +17,11 @@ urlpatterns = [
     path("search/", search_views.search, name="search"),
     path("comments/add/<int:page_id>/", articles_views.add_comment, name="comment_add"),
     path(
+        "comments/edit/<int:comment_id>/",
+        articles_views.edit_comment,
+        name="comment_edit",
+    ),
+    path(
         "comments/delete/<int:comment_id>/",
         articles_views.delete_comment,
         name="comment_delete",

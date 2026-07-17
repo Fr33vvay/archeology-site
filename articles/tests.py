@@ -93,6 +93,17 @@ class CommentModelTests(TestCase):
         self.assertTrue(c.can_delete(self.staff))
         self.assertFalse(c.can_delete(self.other))
 
+    def test_can_edit_only_author(self):
+        """Редактировать может только автор комментария."""
+        c = Comment.objects.create(
+            article=self.article, author=self.author, body="Текст"
+        )
+        self.assertTrue(c.can_edit(self.author))
+        self.assertFalse(c.can_edit(self.staff))
+        self.assertFalse(c.can_edit(self.other))
+        c.soft_delete()
+        self.assertFalse(c.can_edit(self.author))
+
     def test_soft_delete(self):
         """Удаление помечает комментарий, не стирает запись."""
         c = Comment.objects.create(
@@ -211,3 +222,68 @@ class CommentViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Comment.objects.filter(article=self.article).count(), 0)
+
+    def test_author_can_edit_own(self):
+        """Автор меняет текст своего комментария."""
+        c = Comment.objects.create(
+            article=self.article, author=self.user, body="Было"
+        )
+        self.client.login(username="commenter", password="pass-12345")
+        response = self.client.post(
+            f"/comments/edit/{c.pk}/", {"body": "Стало"}
+        )
+        self.assertEqual(response.status_code, 302)
+        c.refresh_from_db()
+        self.assertEqual(c.body, "Стало")
+
+    def test_other_cannot_edit(self):
+        """Чужой пользователь не может редактировать комментарий."""
+        User.objects.create_user(
+            username="intruder", email="i@yandex.ru", password="pass-12345"
+        )
+        c = Comment.objects.create(
+            article=self.article, author=self.user, body="Чужой"
+        )
+        self.client.login(username="intruder", password="pass-12345")
+        response = self.client.post(
+            f"/comments/edit/{c.pk}/", {"body": "Взлом"}
+        )
+        self.assertEqual(response.status_code, 403)
+        c.refresh_from_db()
+        self.assertEqual(c.body, "Чужой")
+
+    @override_settings(MEDIA_ROOT="/tmp/archeology-test-media")
+    def test_edit_can_remove_image(self):
+        """При редактировании можно удалить прикреплённое фото."""
+        c = Comment.objects.create(
+            article=self.article, author=self.user, body="С фото"
+        )
+        img = CommentImage.objects.create(
+            comment=c, image=_png_upload("keep-or-drop.png"), sort_order=0
+        )
+        self.client.login(username="commenter", password="pass-12345")
+        response = self.client.post(
+            f"/comments/edit/{c.pk}/",
+            {"body": "Без фото", "remove_images": [str(img.pk)]},
+        )
+        self.assertEqual(response.status_code, 302)
+        c.refresh_from_db()
+        self.assertEqual(c.body, "Без фото")
+        self.assertEqual(c.images.count(), 0)
+
+    @override_settings(MEDIA_ROOT="/tmp/archeology-test-media")
+    def test_edit_rejects_empty_after_removing_all(self):
+        """Нельзя сохранить пустой комментарий без текста и фото."""
+        c = Comment.objects.create(
+            article=self.article, author=self.user, body=""
+        )
+        img = CommentImage.objects.create(
+            comment=c, image=_png_upload("only.png"), sort_order=0
+        )
+        self.client.login(username="commenter", password="pass-12345")
+        response = self.client.post(
+            f"/comments/edit/{c.pk}/",
+            {"body": "", "remove_images": [str(img.pk)]},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(CommentImage.objects.filter(pk=img.pk).exists())
