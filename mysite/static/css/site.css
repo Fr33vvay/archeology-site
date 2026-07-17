@@ -133,7 +133,8 @@ a:hover {
 }
 
 .hero__image {
-  margin-top: 1.5rem;
+  margin: 1.5rem 0 0;
+  padding: 0;
   border: 1px solid var(--line);
   background: var(--panel);
 }
@@ -163,14 +164,26 @@ a:hover {
 
 .card--article {
   display: flex;
-  gap: 1rem;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.55rem;
 }
 
+.card__meta {
+  margin: 0;
+}
+
+.card__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+/* Квадрат по высоте примерно: заголовок + 2 строки описания */
 .card__cover {
-  flex: 0 0 5.5rem;
-  width: 5.5rem;
-  height: 5.5rem;
+  --cover-size: calc(1.2rem * 1.3 + 0.35rem + 1em * 1.65 * 2);
+  flex: 0 0 var(--cover-size);
+  width: var(--cover-size);
+  height: var(--cover-size);
   border: 1px solid var(--line);
   overflow: hidden;
   background: var(--accent-soft);
@@ -190,7 +203,8 @@ a:hover {
 .card h3 {
   font-family: var(--serif);
   font-size: 1.2rem;
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.35rem;
+  line-height: 1.3;
 }
 
 .card h3 a {
@@ -202,11 +216,18 @@ a:hover {
   color: var(--accent);
 }
 
+.card__intro {
+  margin: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
 @media (max-width: 640px) {
   .card__cover {
-    flex-basis: 4.5rem;
-    width: 4.5rem;
-    height: 4.5rem;
+    --cover-size: calc(1.1rem * 1.3 + 0.3rem + 1em * 1.55 * 2);
   }
 }
 
