@@ -33,6 +33,11 @@ WAGTAILADMIN_BASE_URL = os.environ.get("WAGTAILADMIN_BASE_URL", "http://localhos
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+# После включения HTTPS на домене: DJANGO_COOKIE_SECURE=1 в .env
+_COOKIE_SECURE = os.environ.get("DJANGO_COOKIE_SECURE", "0") == "1"
+SESSION_COOKIE_SECURE = _COOKIE_SECURE
+CSRF_COOKIE_SECURE = _COOKIE_SECURE
+
 try:
     from .local import *  # noqa: F401,F403
 except ImportError:

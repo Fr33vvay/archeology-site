@@ -31,7 +31,7 @@ python manage.py runserver
 ## Деплой на ВМ в Яндекс Облаке (Docker Compose)
 
 1. Создайте новую виртуальную машину (Ubuntu 22.04/24.04), диск 20–40 ГБ, публичный IP.
-2. В группе безопасности откройте порты **22** (SSH) и **80** (HTTP).
+2. В группе безопасности откройте порты **22** (SSH), **80** (HTTP) и **443** (HTTPS).
 3. На ВМ установите Docker и Docker Compose plugin.
 4. Склонируйте репозиторий и настройте окружение:
 
@@ -55,13 +55,24 @@ chmod +x scripts/backup.sh
 ./scripts/backup.sh
 ```
 
-## Домен позже
+## Домен и HTTPS
 
-1. Купите домен у регистратора (reg.ru, timeweb, beget и т.п.).
-2. Создайте A-запись `@` → IP вашей ВМ (и при желании `www`).
-3. В `.env` укажите `DJANGO_ALLOWED_HOSTS=ваш.домен`, `WAGTAILADMIN_BASE_URL=https://ваш.домен`, при необходимости `DJANGO_CSRF_TRUSTED_ORIGINS=https://ваш.домен`.
-4. Перезапустите: `docker compose up -d`.
-5. Добавьте HTTPS (Let's Encrypt) в Nginx — приложение переносить не нужно.
+Домен: `коренцвит.рф` (punycode `xn--b1afkfqeou7a.xn--p1ai`).
+
+1. A-записи `@` и `www` → IP ВМ.
+2. В группе безопасности Яндекс Облака откройте **443/TCP**.
+3. На ВМ:
+
+```bash
+cd /opt/archeology-site
+sudo git pull
+# опционально: CERTBOT_EMAIL=you@yandex.ru
+sudo bash scripts/enable-https.sh
+sudo docker compose up -d --build
+```
+
+Сайт: https://коренцвит.рф/  
+Продление сертификата — cron (настраивает скрипт).
 
 ## Стек
 
