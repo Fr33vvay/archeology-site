@@ -1,4 +1,6 @@
 (function () {
+  var SCROLL_KEY = "archeologyArticleScrollY";
+
   var panel = document.querySelector("[data-comments-panel]");
   if (!panel) return;
 
@@ -22,7 +24,6 @@
     drawer.hidden = true;
     openBtn.setAttribute("aria-expanded", "false");
     openBtn.hidden = false;
-    // Убираем ?comments=1 из адреса, чтобы обновление не открывало панель снова
     if (window.history && window.history.replaceState) {
       var url = new URL(window.location.href);
       if (url.searchParams.has("comments")) {
@@ -31,6 +32,37 @@
         window.history.replaceState(null, "", url.pathname + url.search);
       }
     }
+  }
+
+  // Перед отправкой комментария запоминаем, где читали статью
+  document.querySelectorAll("form.comment-form, form.comment-form--reply, form.comment-delete").forEach(function (form) {
+    form.addEventListener("submit", function () {
+      try {
+        sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+      } catch (e) {
+        /* ignore */
+      }
+    });
+  });
+
+  function restoreScroll() {
+    var raw = null;
+    try {
+      raw = sessionStorage.getItem(SCROLL_KEY);
+      if (raw !== null) sessionStorage.removeItem(SCROLL_KEY);
+    } catch (e) {
+      return;
+    }
+    if (raw === null) return;
+    var y = parseInt(raw, 10);
+    if (isNaN(y)) return;
+    // После раскладки с открытой панелью
+    window.requestAnimationFrame(function () {
+      window.scrollTo(0, y);
+      window.requestAnimationFrame(function () {
+        window.scrollTo(0, y);
+      });
+    });
   }
 
   openBtn.addEventListener("click", openPanel);
@@ -42,8 +74,12 @@
     }
   });
 
-  // Уже открыто с сервера (?comments=1) — ничего не трогаем, без повторной подгонки
-  if (panel.classList.contains("is-open") || layout.classList.contains("is-comments-open")) {
+  var openedFromServer =
+    panel.classList.contains("is-open") ||
+    (layout && layout.classList.contains("is-comments-open"));
+
+  if (openedFromServer) {
+    restoreScroll();
     return;
   }
 
@@ -52,5 +88,6 @@
     window.location.hash === "#comments"
   ) {
     openPanel();
+    restoreScroll();
   }
 })();
