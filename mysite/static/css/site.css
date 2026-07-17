@@ -956,16 +956,24 @@ a:hover {
 }
 
 .comment-lightbox {
-  position: relative;
-  border: none;
-  padding: 0;
-  max-width: min(92vw, 56rem);
-  max-height: 92vh;
-  background: transparent;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  background: rgba(20, 18, 14, 0.78);
 }
 
-.comment-lightbox::backdrop {
-  background: rgba(20, 18, 14, 0.72);
+.comment-lightbox[hidden] {
+  display: none;
+}
+
+html.is-lightbox-open,
+html.is-lightbox-open body {
+  overflow: hidden;
 }
 
 .comment-lightbox__img {
@@ -976,20 +984,21 @@ a:hover {
   height: auto;
   object-fit: contain;
   background: #111;
+  box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.35);
 }
 
 .comment-lightbox__close {
-  position: absolute;
-  top: 0.35rem;
-  right: 0.45rem;
-  z-index: 1;
+  position: fixed;
+  top: 0.85rem;
+  right: 0.85rem;
+  z-index: 2001;
   border: none;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.55);
   color: #fff;
   font-size: 1.5rem;
   line-height: 1;
-  width: 2rem;
-  height: 2rem;
+  width: 2.25rem;
+  height: 2.25rem;
   cursor: pointer;
 }
 

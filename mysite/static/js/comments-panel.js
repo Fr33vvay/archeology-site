@@ -178,7 +178,8 @@
       return;
     }
     // Не закрывать панель, если открыт просмотр фото
-    if (document.querySelector("dialog[open]")) return;
+    var lightbox = document.querySelector("[data-comment-lightbox-root]");
+    if (lightbox && !lightbox.hidden) return;
     closePanel();
   });
 

@@ -37,49 +37,42 @@
 
   document.querySelectorAll("[data-comment-images]").forEach(bindPreview);
 
-  var dialog = document.querySelector("[data-comment-lightbox-dialog]");
-  var dialogImg = document.querySelector("[data-comment-lightbox-img]");
+  var lightbox = document.querySelector("[data-comment-lightbox-root]");
+  var lightboxImg = document.querySelector("[data-comment-lightbox-img]");
   var closeBtn = document.querySelector("[data-comment-lightbox-close]");
-  if (!dialog || !dialogImg) return;
+  if (!lightbox || !lightboxImg) return;
 
   function openLightbox(src) {
     if (!src) return;
-    var scrollY = window.scrollY;
-    dialogImg.src = src;
-    if (typeof dialog.showModal === "function") {
-      dialog.showModal();
-      // showModal часто сбрасывает прокрутку страницы — возвращаем
-      window.scrollTo(0, scrollY);
-      requestAnimationFrame(function () {
-        window.scrollTo(0, scrollY);
-      });
-    } else {
-      window.open(src, "_blank");
-    }
+    lightboxImg.src = src;
+    lightbox.hidden = false;
+    lightbox.setAttribute("aria-hidden", "false");
+    document.documentElement.classList.add("is-lightbox-open");
+  }
+
+  function closeLightbox() {
+    lightbox.hidden = true;
+    lightbox.setAttribute("aria-hidden", "true");
+    lightboxImg.removeAttribute("src");
+    document.documentElement.classList.remove("is-lightbox-open");
   }
 
   document.addEventListener("click", function (event) {
     var trigger = event.target.closest("[data-comment-lightbox]");
     if (!trigger) return;
     event.preventDefault();
-    event.stopPropagation();
     var src =
       trigger.getAttribute("data-full-src") || trigger.getAttribute("href");
     openLightbox(src);
   });
 
-  function closeLightbox() {
-    var scrollY = window.scrollY;
-    if (typeof dialog.close === "function" && dialog.open) dialog.close();
-    dialogImg.src = "";
-    window.scrollTo(0, scrollY);
-  }
-
   if (closeBtn) closeBtn.addEventListener("click", closeLightbox);
-  dialog.addEventListener("click", function (event) {
-    if (event.target === dialog) closeLightbox();
+  lightbox.addEventListener("click", function (event) {
+    if (event.target === lightbox) closeLightbox();
   });
-  dialog.addEventListener("close", function () {
-    dialogImg.src = "";
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && !lightbox.hidden) {
+      closeLightbox();
+    }
   });
 })();

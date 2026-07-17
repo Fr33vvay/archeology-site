@@ -1,6 +1,7 @@
 """Тесты комментариев к статьям."""
 
 import io
+from pathlib import Path
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -13,6 +14,7 @@ from articles.models import ArticleIndexPage, ArticlePage, Comment, CommentImage
 from home.models import HomePage
 
 User = get_user_model()
+STATIC_JS = Path(__file__).resolve().parents[1] / "mysite" / "static" / "js"
 
 
 def _png_upload(name="pic.png", size=(20, 20)):
@@ -287,3 +289,29 @@ class CommentViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertTrue(CommentImage.objects.filter(pk=img.pk).exists())
+
+    @override_settings(MEDIA_ROOT="/tmp/archeology-test-media")
+    def test_comment_image_lightbox_markup(self):
+        """У превью фото есть data-full-src и корневой оверлей просмотра."""
+        comment = Comment.objects.create(
+            article=self.article, author=self.user, body="С фото"
+        )
+        image = CommentImage.objects.create(
+            comment=comment, image=_png_upload("lightbox.png"), sort_order=0
+        )
+        response = self.client.get(self.article.url)
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn("data-comment-lightbox", html)
+        self.assertIn(f'data-full-src="{image.image.url}"', html)
+        self.assertIn("data-comment-lightbox-root", html)
+        self.assertIn("data-comment-lightbox-img", html)
+        self.assertNotIn("data-comment-lightbox-dialog", html)
+
+    def test_lightbox_js_uses_overlay_not_dialog(self):
+        """Скрипт просмотра открывает оверлей и берёт URL из data-full-src."""
+        source = (STATIC_JS / "comment-images.js").read_text(encoding="utf-8")
+        self.assertIn("data-full-src", source)
+        self.assertIn("data-comment-lightbox-root", source)
+        self.assertIn("lightbox.hidden = false", source)
+        self.assertNotIn("showModal", source)
