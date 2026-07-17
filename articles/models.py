@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils.text import Truncator
 
 from wagtail import blocks
 from wagtail.admin.panels import FieldPanel
@@ -154,7 +155,11 @@ class Comment(models.Model):
     )
     body = models.TextField("Текст", max_length=5000, blank=True)
     created_at = models.DateTimeField("Создан", auto_now_add=True)
-    is_deleted = models.BooleanField("Удалён", default=False)
+    is_deleted = models.BooleanField(
+        "Скрыт на сайте",
+        default=False,
+        help_text="Мягкое скрытие для посетителей. Чтобы убрать запись совсем, используйте «Удалить».",
+    )
 
     class Meta:
         verbose_name = "Комментарий"
@@ -162,7 +167,24 @@ class Comment(models.Model):
         ordering = ["created_at"]
 
     def __str__(self):
-        return f"#{self.pk} к статье {self.article_id}"
+        return f"#{self.pk} {self.body_preview()}"
+
+    def article_preview(self) -> str:
+        """Короткое название статьи для списков в админке."""
+        title = getattr(self.article, "title", "") or ""
+        return Truncator(title).words(4, truncate="…")
+
+    article_preview.short_description = "Статья"
+    article_preview.admin_order_field = "article__title"
+
+    def body_preview(self) -> str:
+        """Начало текста комментария для списков в админке."""
+        text = (self.body or "").strip()
+        if not text:
+            return "«фото»" if self.pk and self.images.exists() else "—"
+        return Truncator(text).words(8, truncate="…")
+
+    body_preview.short_description = "Текст"
 
     def clean(self):
         if self.parent_id:

@@ -11,7 +11,15 @@ class CommentImageInline(admin.TabularInline):
 
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ("id", "article", "author", "parent", "is_deleted", "created_at")
+    list_display = (
+        "id",
+        "article_preview",
+        "body_preview",
+        "author",
+        "parent",
+        "is_deleted",
+        "created_at",
+    )
     list_filter = ("is_deleted", "created_at")
     search_fields = (
         "body",
@@ -25,6 +33,10 @@ class CommentAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at",)
     inlines = (CommentImageInline,)
     actions = ("soft_delete_selected", "hard_delete_selected")
+    list_select_related = ("article", "author")
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related("images")
 
     @admin.action(description="Пометить удалёнными (мягко)")
     def soft_delete_selected(self, request, queryset):
