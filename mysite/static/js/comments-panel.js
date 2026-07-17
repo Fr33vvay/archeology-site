@@ -1,6 +1,9 @@
 (function () {
   var SCROLL_KEY = "archeologyArticleScrollY";
+  var DRAWER_SCROLL_KEY = "archeologyCommentsDrawerScroll";
   var MOBILE_MAX = 1039;
+  var COMMENT_FORM_SELECTOR =
+    "form.comment-form, form.comment-form--reply, form.comment-form--compose, form.comment-form--edit, form.comment-delete";
 
   var panel = document.querySelector("[data-comments-panel]");
   if (!panel) return;
@@ -65,35 +68,50 @@
     jumpToElement(panel);
   }
 
-  document
-    .querySelectorAll(
-      "form.comment-form, form.comment-form--reply, form.comment-form--compose, form.comment-form--edit, form.comment-delete"
-    )
-    .forEach(function (form) {
-      form.addEventListener("submit", function () {
-        try {
-          sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
-        } catch (e) {
-          /* ignore */
-        }
-      });
-    });
+  function saveScroll() {
+    try {
+      sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+      sessionStorage.setItem(DRAWER_SCROLL_KEY, String(drawer.scrollTop || 0));
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  // capture: успеваем сохранить скролл до ухода со страницы (в т.ч. после confirm)
+  document.addEventListener(
+    "submit",
+    function (event) {
+      var form = event.target;
+      if (!form || !form.matches || !form.matches(COMMENT_FORM_SELECTOR)) return;
+      saveScroll();
+    },
+    true
+  );
 
   function restoreScroll() {
     var raw = null;
+    var drawerRaw = null;
     try {
       raw = sessionStorage.getItem(SCROLL_KEY);
+      drawerRaw = sessionStorage.getItem(DRAWER_SCROLL_KEY);
       if (raw !== null) sessionStorage.removeItem(SCROLL_KEY);
+      if (drawerRaw !== null) sessionStorage.removeItem(DRAWER_SCROLL_KEY);
     } catch (e) {
       return;
     }
-    if (raw === null) return;
-    var y = parseInt(raw, 10);
-    if (isNaN(y)) return;
+    var y = raw === null ? null : parseInt(raw, 10);
+    var drawerY = drawerRaw === null ? null : parseInt(drawerRaw, 10);
+
+    function apply() {
+      if (y !== null && !isNaN(y)) window.scrollTo(0, y);
+      if (drawerY !== null && !isNaN(drawerY)) drawer.scrollTop = drawerY;
+    }
+
     window.requestAnimationFrame(function () {
-      window.scrollTo(0, y);
+      apply();
       window.requestAnimationFrame(function () {
-        window.scrollTo(0, y);
+        apply();
+        window.setTimeout(apply, 50);
       });
     });
   }
