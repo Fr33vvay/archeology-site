@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Деплой на прод только после успешного прогона всех тестов.
+# Запуск из корня репозитория: ./scripts/deploy.sh
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+
+DEPLOY_HOST="${DEPLOY_HOST:-freeway@158.160.180.56}"
+DEPLOY_DIR="${DEPLOY_DIR:-/opt/archeology-site}"
+
+if [[ -n "$(git status --porcelain)" ]]; then
+  echo "Есть незакоммиченные изменения. Сначала закоммитьте, потом деплойте." >&2
+  exit 1
+fi
+
+echo "==> Тесты"
+if [[ -x "$ROOT/.venv/bin/python" ]]; then
+  PYTHON="$ROOT/.venv/bin/python"
+else
+  PYTHON="${PYTHON:-python3}"
+fi
+"$PYTHON" manage.py test
+
+echo "==> Push в origin"
+git push origin HEAD
+
+echo "==> Сборка и перезапуск на $DEPLOY_HOST"
+ssh "$DEPLOY_HOST" "cd $DEPLOY_DIR && sudo git pull && sudo docker compose build web && sudo docker compose run --rm web python manage.py migrate --noinput && sudo docker compose up -d web"
+
+echo "==> Готово"
