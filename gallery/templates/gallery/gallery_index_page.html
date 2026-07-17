@@ -19,7 +19,7 @@
             <div style="aspect-ratio:4/3;background:var(--accent-soft);"></div>
           {% endif %}
           <div class="folder-card__body">
-            <h3 style="font-family:var(--serif);margin:0 0 0.35rem;font-size:1.1rem;">{{ folder.title }}</h3>
+            <h2 class="card__title" style="font-family:var(--serif);margin:0 0 0.35rem;font-size:1.1rem;">{{ folder.title }}</h2>
             <p class="meta">
               {% if folder.year %}{{ folder.year }}{% endif %}
               {% if folder.year and folder.place %} · {% endif %}

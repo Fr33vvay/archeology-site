@@ -16,7 +16,7 @@
     <div class="card-list">
       {% for result in search_results %}
         <article class="card">
-          <h3><a href="{% pageurl result %}">{{ result }}</a></h3>
+          <h2 class="card__title"><a href="{% pageurl result %}">{{ result }}</a></h2>
           {% if result.search_description %}
             <p class="muted">{{ result.search_description }}</p>
           {% endif %}

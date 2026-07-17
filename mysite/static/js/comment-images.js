@@ -25,7 +25,7 @@
         if (!file.type || file.type.indexOf("image/") !== 0) return;
         var img = document.createElement("img");
         img.className = "comment-images-preview__item";
-        img.alt = "";
+        img.alt = "Превью выбранного фото";
         img.src = URL.createObjectURL(file);
         img.onload = function () {
           URL.revokeObjectURL(img.src);

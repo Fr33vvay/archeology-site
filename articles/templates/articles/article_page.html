@@ -129,8 +129,8 @@
                   <ul class="comment-images">
                     {% for img in comment.images.all %}
                       <li>
-                        <button type="button" class="comment-images__link" data-comment-lightbox data-full-src="{{ img.image.url }}">
-                          <img src="{{ img.image.url }}" alt="" class="comment-images__thumb" loading="lazy">
+                        <button type="button" class="comment-images__link" data-comment-lightbox data-full-src="{{ img.image.url }}" aria-label="Открыть изображение">
+                          <img src="{{ img.image.url }}" alt="" class="comment-images__thumb" loading="lazy" aria-hidden="true">
                         </button>
                       </li>
                     {% endfor %}
@@ -154,7 +154,7 @@
                       </label>
                       <label class="comment-images-field">
                         <span class="comment-images-field__label">Фото (до 3, каждое до 5 МБ)</span>
-                        <input type="file" name="images" accept="image/jpeg,image/png,image/webp,image/gif" multiple data-comment-images>
+                        <input type="file" name="images" accept="image/jpeg,image/png,image/webp,image/gif" multiple data-comment-images aria-label="Прикрепить фото к ответу">
                         <div class="comment-images-preview" data-comment-images-preview></div>
                       </label>
                       <button class="button" type="submit">Ответить</button>
@@ -189,8 +189,8 @@
                           <ul class="comment-images">
                             {% for img in reply.images.all %}
                               <li>
-                                <button type="button" class="comment-images__link" data-comment-lightbox data-full-src="{{ img.image.url }}">
-                                  <img src="{{ img.image.url }}" alt="" class="comment-images__thumb" loading="lazy">
+                                <button type="button" class="comment-images__link" data-comment-lightbox data-full-src="{{ img.image.url }}" aria-label="Открыть изображение">
+                                  <img src="{{ img.image.url }}" alt="" class="comment-images__thumb" loading="lazy" aria-hidden="true">
                                 </button>
                               </li>
                             {% endfor %}
@@ -228,7 +228,7 @@
             </label>
             <label class="comment-images-field">
               <span class="comment-images-field__label">Фото (до 3, каждое до 5 МБ)</span>
-              <input type="file" name="images" accept="image/jpeg,image/png,image/webp,image/gif" multiple data-comment-images>
+              <input type="file" name="images" accept="image/jpeg,image/png,image/webp,image/gif" multiple data-comment-images aria-label="Прикрепить фото к комментарию">
               <div class="comment-images-preview" data-comment-images-preview></div>
             </label>
             <div class="comment-compose__actions">

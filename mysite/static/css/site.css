@@ -224,19 +224,20 @@ a:hover {
   flex: 1;
 }
 
-.card h3 {
+.card__title {
   font-family: var(--serif);
   font-size: 1.2rem;
+  font-weight: 600;
   margin: 0 0 0.35rem;
   line-height: 1.3;
 }
 
-.card h3 a {
+.card__title a {
   color: var(--ink);
   text-decoration: none;
 }
 
-.card h3 a:hover {
+.card__title a:hover {
   color: var(--accent);
 }
 

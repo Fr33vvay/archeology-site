@@ -23,7 +23,7 @@
       </label>
       <label class="comment-images-field">
         <span class="comment-images-field__label">Фото (до 3, каждое до 5 МБ)</span>
-        <input type="file" name="images" accept="image/jpeg,image/png,image/webp,image/gif" multiple data-comment-images>
+        <input type="file" name="images" accept="image/jpeg,image/png,image/webp,image/gif" multiple data-comment-images aria-label="Прикрепить фото к посту">
         <div class="comment-images-preview" data-comment-images-preview></div>
       </label>
       <button class="button" type="submit">Опубликовать</button>
@@ -57,8 +57,8 @@
           <ul class="comment-images">
             {% for img in post.images.all %}
               <li>
-                <button type="button" class="comment-images__link" data-comment-lightbox data-full-src="{{ img.image.url }}">
-                  <img src="{{ img.image.url }}" alt="" class="comment-images__thumb" loading="lazy">
+                <button type="button" class="comment-images__link" data-comment-lightbox data-full-src="{{ img.image.url }}" aria-label="Открыть изображение">
+                  <img src="{{ img.image.url }}" alt="" class="comment-images__thumb" loading="lazy" aria-hidden="true">
                 </button>
               </li>
             {% endfor %}
@@ -69,8 +69,8 @@
           {% if user.is_authenticated %}
             <form class="like-form" method="post" action="{% url 'blog_post_like' post.pk %}">
               {% csrf_token %}
-              <button type="submit" class="like-button{% if post.is_liked %} is-active{% endif %}" aria-pressed="{% if post.is_liked %}true{% else %}false{% endif %}">
-                ♥ <span>{{ post.likes_count }}</span>
+              <button type="submit" class="like-button{% if post.is_liked %} is-active{% endif %}" aria-pressed="{% if post.is_liked %}true{% else %}false{% endif %}" aria-label="Нравится">
+                <span aria-hidden="true">♥</span> <span>{{ post.likes_count }}</span>
               </button>
             </form>
           {% else %}

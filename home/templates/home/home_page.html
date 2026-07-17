@@ -32,7 +32,7 @@
               </a>
             {% endif %}
             <div class="card__body">
-              <h3><a href="{% pageurl article %}">{{ article.title }}</a></h3>
+              <h3 class="card__title"><a href="{% pageurl article %}">{{ article.title }}</a></h3>
               {% if article.intro %}<p class="muted card__intro">{{ article.intro }}</p>{% endif %}
             </div>
           </div>
