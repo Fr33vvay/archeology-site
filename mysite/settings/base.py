@@ -33,8 +33,6 @@ INSTALLED_APPS = [
     "django.contrib.sites",
     "allauth",
     "allauth.account",
-    "allauth.socialaccount",
-    "allauth.socialaccount.providers.vk",
 ]
 
 SITE_ID = 1
@@ -95,7 +93,6 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 ACCOUNT_ADAPTER = "accounts.adapters.AccountAdapter"
-SOCIALACCOUNT_ADAPTER = "accounts.adapters.SocialAccountAdapter"
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "optional"
@@ -104,29 +101,6 @@ ACCOUNT_LOGOUT_ON_GET = False
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 ACCOUNT_LOGOUT_REDIRECT_URL = "/"
-
-# VK ID (https://id.vk.ru) — ключи из переменных окружения
-_VK_CLIENT_ID = os.environ.get("VK_CLIENT_ID", "").strip()
-_VK_SECRET = os.environ.get("VK_SECRET", "").strip()
-SOCIALACCOUNT_PROVIDERS = {
-    "vk": {
-        "APPS": (
-            [
-                {
-                    "client_id": _VK_CLIENT_ID,
-                    "secret": _VK_SECRET,
-                    "key": "",
-                }
-            ]
-            if _VK_CLIENT_ID and _VK_SECRET
-            else []
-        ),
-        "SCOPE": ["email"],
-    }
-}
-SOCIALACCOUNT_QUERY_EMAIL = True
-SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
-SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 
 LANGUAGE_CODE = "ru"
 TIME_ZONE = "Europe/Moscow"

@@ -1,23 +1,13 @@
 {% extends "account/base_manage.html" %}
 {% load i18n %}
-{% load socialaccount %}
 
 {% block title %}Регистрация{% endblock %}
 
 {% block auth_content %}
 <h1 class="page-title">Регистрация</h1>
 <p class="lede">
-  Доступна регистрация с российской почты (Yandex, Mail.ru, Rambler и др., а также адреса в зоне .ru)
-  или через ВКонтакте.
+  Доступна регистрация с российской почты (Yandex, Mail.ru, Rambler и др., а также адреса в зоне .ru).
 </p>
-
-{% get_providers as socialaccount_providers %}
-{% if socialaccount_providers %}
-  <div class="auth-social">
-    <a class="button button--vk" href="{% provider_login_url 'vk' process='login' %}">Через VK</a>
-  </div>
-  <p class="auth-divider"><span>или по почте</span></p>
-{% endif %}
 
 <form class="auth-form" method="post" action="{% url 'account_signup' %}">
   {% csrf_token %}

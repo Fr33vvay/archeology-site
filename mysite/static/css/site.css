@@ -375,16 +375,6 @@ a.button {
   text-decoration: none;
 }
 
-.button--vk {
-  background: #0077ff;
-  border-color: #0077ff;
-}
-
-.button--vk:hover {
-  background: #005fcc;
-  border-color: #005fcc;
-}
-
 .nav-user {
   color: var(--muted);
   font-size: 0.9rem;
@@ -422,27 +412,6 @@ a.button {
 .auth-error {
   color: #8b2e2e;
   font-size: 0.85rem;
-}
-
-.auth-social {
-  margin: 1.25rem 0 0.5rem;
-}
-
-.auth-divider {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 1.25rem 0;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
-.auth-divider::before,
-.auth-divider::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: var(--line);
 }
 
 .site-footer {

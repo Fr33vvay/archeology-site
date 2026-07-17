@@ -21,7 +21,6 @@ DEFAULT_ALLOWED_EMAIL_DOMAINS = frozenset(
         "autorambler.ru",
         "myrambler.ru",
         "ro.ru",
-        "vk.com",  # иногда выдаётся при связке с VK
     }
 )
 

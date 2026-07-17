@@ -26,7 +26,7 @@ python manage.py runserver
 | `editor` | `editor-change-me` |
 
 Памятка для редакторов: [EDITORS.md](EDITORS.md)  
-Регистрация и VK: [AUTH.md](AUTH.md)
+Регистрация по почте: [AUTH.md](AUTH.md)
 
 ## Деплой на ВМ в Яндекс Облаке (Docker Compose)
 
