@@ -65,12 +65,13 @@ a:hover {
   transition: width 0.28s ease, max-width 0.28s ease, margin 0.28s ease;
 }
 
-/* При открытых комментариях контент шире и прижат влево */
+/* При открытых комментариях — почти вся ширина экрана, прижато влево */
 @media (min-width: 1040px) {
   .site-main:has(.article-with-comments.is-comments-open) .wrap {
-    width: min(100% - 2rem, 1280px);
+    width: calc(100% - 2rem);
+    max-width: none;
     margin-left: 1rem;
-    margin-right: auto;
+    margin-right: 1rem;
   }
 }
 
@@ -269,21 +270,32 @@ a:hover {
     width: 100%;
   }
 
-  /* Раскрытие: статья слева, широкая колонка комментариев справа — без перекрытия */
+  /* Раскрытие: статья слева, комментарии забирают всё оставшееся место справа */
   .article-with-comments.is-comments-open {
-    grid-template-columns: minmax(0, 640px) minmax(360px, 420px);
-    column-gap: 2.25rem;
+    grid-template-columns: minmax(0, 560px) minmax(0, 1fr);
+    column-gap: 2.5rem;
   }
 
   .article-with-comments.is-comments-open .comments-panel {
     position: sticky;
     top: 5.5rem;
     max-height: calc(100vh - 6.5rem);
+    width: 100%;
+    min-width: 0;
   }
 
   .article-with-comments.is-comments-open .comments-panel__drawer {
     max-height: calc(100vh - 6.5rem);
     overflow: auto;
+    width: 100%;
+  }
+
+  .article-with-comments.is-comments-open .comment-form,
+  .article-with-comments.is-comments-open .comment-form--reply,
+  .article-with-comments.is-comments-open .comment-textarea,
+  .article-with-comments.is-comments-open .comment-form textarea {
+    max-width: none;
+    width: 100%;
   }
 }
 
@@ -558,12 +570,14 @@ a:hover {
 .comment-form--reply {
   margin: 0.75rem 0 0;
   max-width: none;
+  width: 100%;
 }
 
 .comment-form--reply .comment-textarea {
-  min-height: 9rem;
-  font-size: 1rem;
-  line-height: 1.5;
+  min-height: 14rem;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  width: 100%;
 }
 
 .comment-textarea,
