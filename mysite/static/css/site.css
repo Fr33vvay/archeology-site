@@ -440,6 +440,12 @@ a:hover {
   margin-top: 2.5rem;
   padding-top: 1.75rem;
   border-top: 1px solid var(--line);
+  /* запас под липкую шапку при переходе по #comments */
+  scroll-margin-top: 5.5rem;
+}
+
+.article[data-article-top] {
+  scroll-margin-top: 5.5rem;
 }
 
 .comments-panel__collapse {

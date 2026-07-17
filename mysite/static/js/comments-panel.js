@@ -18,6 +18,19 @@
     return window.matchMedia("(max-width: " + MOBILE_MAX + "px)").matches;
   }
 
+  function headerOffset() {
+    var header = document.querySelector(".site-header");
+    if (!header) return 0;
+    return Math.ceil(header.getBoundingClientRect().height) + 8;
+  }
+
+  /** Мгновенный скролл к элементу с учётом липкой шапки */
+  function jumpToElement(el) {
+    if (!el) return;
+    var top = el.getBoundingClientRect().top + window.scrollY - headerOffset();
+    window.scrollTo(0, Math.max(0, top));
+  }
+
   function openPanel() {
     panel.classList.add("is-open");
     if (layout) layout.classList.add("is-comments-open");
@@ -44,19 +57,12 @@
 
   function collapseAndGoUp() {
     closePanel();
-    var target = articleTop || document.querySelector(".site-header");
-    if (target && target.scrollIntoView) {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-    } else {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    jumpToElement(articleTop || document.body);
   }
 
   function scrollToComments() {
     openPanel();
-    window.requestAnimationFrame(function () {
-      panel.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+    jumpToElement(panel);
   }
 
   document.querySelectorAll("form.comment-form, form.comment-form--reply, form.comment-delete").forEach(function (form) {
@@ -114,7 +120,6 @@
     return;
   }
 
-  // На мобилках комментарии сразу раскрыты (форма, ответы, список)
   if (isMobile()) {
     openPanel();
     restoreScroll();
