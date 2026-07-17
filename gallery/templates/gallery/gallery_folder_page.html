@@ -19,7 +19,7 @@
         <figure class="photo-card">
           {% image photo.image width-900 as img %}
           <a href="{{ img.url }}" target="_blank" rel="noopener">
-            {% image photo.image fill-600x450 as thumb %}
+            {% image photo.image fill-1200x900 as thumb %}
             <img src="{{ thumb.url }}" alt="{{ photo.caption|default:photo.image.title }}">
           </a>
           {% if photo.caption %}<figcaption>{{ photo.caption }}</figcaption>{% endif %}

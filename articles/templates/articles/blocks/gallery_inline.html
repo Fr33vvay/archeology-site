@@ -4,7 +4,7 @@
   <div class="gallery-inline__grid">
     {% for item in value.images %}
       <figure class="figure">
-        {% image item.image fill-400x300 as img %}
+        {% image item.image fill-800x600 as img %}
         <img src="{{ img.url }}" alt="{{ item.caption|default:item.image.title }}">
         {% if item.caption %}<figcaption>{{ item.caption }}</figcaption>{% endif %}
       </figure>

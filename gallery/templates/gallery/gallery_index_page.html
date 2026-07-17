@@ -13,7 +13,7 @@
       <article class="folder-card">
         <a href="{% pageurl folder %}">
           {% if folder.cover_image %}
-            {% image folder.cover_image fill-600x450 as cover %}
+            {% image folder.cover_image fill-1200x900 as cover %}
             <img src="{{ cover.url }}" alt="{{ folder.title }}">
           {% else %}
             <div style="aspect-ratio:4/3;background:var(--accent-soft);"></div>
