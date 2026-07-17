@@ -1,123 +1,164 @@
 {% extends "base.html" %}
-{% load wagtailcore_tags wagtailimages_tags %}
+{% load static wagtailcore_tags wagtailimages_tags %}
 
 {% block content %}
-<article class="article">
-  <p class="meta">
-    {% if page.first_published_at %}{{ page.first_published_at|date:"d E Y" }}{% endif %}
-  </p>
-  <h1 class="page-title">{{ page.title }}</h1>
-  {% if page.intro %}<p class="lede">{{ page.intro }}</p>{% endif %}
-
-  <div class="article-body">
-    {% for block in page.body %}
-      {% if block.block_type == "heading" %}
-        <h2 class="block-heading">{{ block.value }}</h2>
-      {% elif block.block_type == "paragraph" %}
-        <div class="block-paragraph">{{ block.value|richtext }}</div>
-      {% elif block.block_type == "quote" %}
-        <blockquote class="block-quote">{{ block.value }}</blockquote>
-      {% else %}
-        {% include_block block %}
-      {% endif %}
-    {% endfor %}
-  </div>
-</article>
-
-<section class="comments" id="comments">
-  <h2 class="section-title">Комментарии{% if comments_count %} ({{ comments_count }}){% endif %}</h2>
-
-  {% if messages %}
-    <ul class="comment-messages">
-      {% for message in messages %}
-        <li class="comment-messages__item{% if message.tags %} comment-messages__item--{{ message.tags }}{% endif %}">{{ message }}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
-
-  {% if user.is_authenticated %}
-    <form class="comment-form" method="post" action="{% url 'comment_add' page.pk %}">
-      {% csrf_token %}
-      <label class="auth-label">
-        <span>{{ comment_form.body.label }}</span>
-        {{ comment_form.body }}
-      </label>
-      <button class="button" type="submit">Отправить</button>
-    </form>
-  {% else %}
-    <p class="muted">
-      <a href="{% url 'account_login' %}?next={{ request.path }}%23comments">Войдите</a>,
-      чтобы оставить комментарий.
+<div class="article-with-comments">
+  <article class="article">
+    <p class="meta">
+      {% if page.first_published_at %}{{ page.first_published_at|date:"d E Y" }}{% endif %}
     </p>
-  {% endif %}
+    <h1 class="page-title">{{ page.title }}</h1>
+    {% if page.intro %}<p class="lede">{{ page.intro }}</p>{% endif %}
 
-  {% if comments %}
-    <ul class="comment-list">
-      {% for comment in comments %}
-        <li class="comment" id="comment-{{ comment.pk }}">
-          <div class="comment__meta">
-            <span class="comment__author">{{ comment.author_label }}</span>
-            <time class="comment__date" datetime="{{ comment.created_at|date:'c' }}">{{ comment.created_at|date:"d E Y, H:i" }}</time>
-          </div>
-          {% if comment.is_deleted %}
-            <p class="comment__body comment__body--deleted">Комментарий удалён</p>
-          {% else %}
-            <p class="comment__body">{{ comment.body|linebreaksbr }}</p>
-          {% endif %}
-
-          <div class="comment__actions">
-            {% if not comment.is_deleted and user.is_authenticated %}
-              <details class="comment-reply">
-                <summary>Ответить</summary>
-                <form class="comment-form comment-form--reply" method="post" action="{% url 'comment_add' page.pk %}">
-                  {% csrf_token %}
-                  <input type="hidden" name="parent" value="{{ comment.pk }}">
-                  <label class="auth-label">
-                    <span>Ответ</span>
-                    <textarea name="body" rows="3" class="comment-textarea" required placeholder="Ваш ответ"></textarea>
-                  </label>
-                  <button class="button" type="submit">Ответить</button>
-                </form>
-              </details>
-              {% if comment.author_id == user.id or user.is_staff %}
-                <form class="comment-delete" method="post" action="{% url 'comment_delete' comment.pk %}" onsubmit="return confirm('Удалить комментарий?');">
-                  {% csrf_token %}
-                  <button type="submit" class="comment-delete__btn">Удалить</button>
-                </form>
-              {% endif %}
-            {% endif %}
-          </div>
-
-          {% if comment.replies.all %}
-            <ul class="comment-list comment-list--replies">
-              {% for reply in comment.replies.all %}
-                <li class="comment comment--reply" id="comment-{{ reply.pk }}">
-                  <div class="comment__meta">
-                    <span class="comment__author">{{ reply.author_label }}</span>
-                    <time class="comment__date" datetime="{{ reply.created_at|date:'c' }}">{{ reply.created_at|date:"d E Y, H:i" }}</time>
-                  </div>
-                  {% if reply.is_deleted %}
-                    <p class="comment__body comment__body--deleted">Комментарий удалён</p>
-                  {% else %}
-                    <p class="comment__body">{{ reply.body|linebreaksbr }}</p>
-                    {% if user.is_authenticated %}
-                      {% if reply.author_id == user.id or user.is_staff %}
-                        <form class="comment-delete" method="post" action="{% url 'comment_delete' reply.pk %}" onsubmit="return confirm('Удалить комментарий?');">
-                          {% csrf_token %}
-                          <button type="submit" class="comment-delete__btn">Удалить</button>
-                        </form>
-                      {% endif %}
-                    {% endif %}
-                  {% endif %}
-                </li>
-              {% endfor %}
-            </ul>
-          {% endif %}
-        </li>
+    <div class="article-body">
+      {% for block in page.body %}
+        {% if block.block_type == "heading" %}
+          <h2 class="block-heading">{{ block.value }}</h2>
+        {% elif block.block_type == "paragraph" %}
+          <div class="block-paragraph">{{ block.value|richtext }}</div>
+        {% elif block.block_type == "quote" %}
+          <blockquote class="block-quote">{{ block.value }}</blockquote>
+        {% else %}
+          {% include_block block %}
+        {% endif %}
       {% endfor %}
-    </ul>
-  {% else %}
-    <p class="muted">Пока нет комментариев.</p>
-  {% endif %}
-</section>
+    </div>
+  </article>
+
+  <aside
+    class="comments-panel"
+    id="comments"
+    data-comments-panel
+    {% if messages %}data-open-on-load="1"{% endif %}
+  >
+    <button type="button" class="comments-panel__peek" data-comments-open aria-expanded="false">
+      <span class="comments-panel__peek-title">
+        Комментарии{% if comments_count %} · {{ comments_count }}{% endif %}
+      </span>
+      {% if comments_preview %}
+        <ul class="comments-panel__preview">
+          {% for comment in comments_preview %}
+            <li class="comments-panel__preview-item">
+              <span class="comments-panel__preview-author">{{ comment.author_label }}</span>
+              {% if comment.is_deleted %}
+                <span class="comments-panel__preview-text comments-panel__preview-text--muted">Комментарий удалён</span>
+              {% else %}
+                <span class="comments-panel__preview-text">{{ comment.body|truncatechars:90 }}</span>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="comments-panel__preview-empty">Пока нет комментариев. Нажмите, чтобы написать.</p>
+      {% endif %}
+      <span class="comments-panel__peek-hint">Открыть</span>
+    </button>
+
+    <div class="comments-panel__drawer" data-comments-drawer hidden>
+      <div class="comments-panel__drawer-head">
+        <h2 class="comments-panel__title">
+          Комментарии{% if comments_count %} ({{ comments_count }}){% endif %}
+        </h2>
+        <button type="button" class="comments-panel__close" data-comments-close aria-label="Закрыть">×</button>
+      </div>
+
+      {% if messages %}
+        <ul class="comment-messages">
+          {% for message in messages %}
+            <li class="comment-messages__item{% if message.tags %} comment-messages__item--{{ message.tags }}{% endif %}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      {% if user.is_authenticated %}
+        <form class="comment-form" method="post" action="{% url 'comment_add' page.pk %}">
+          {% csrf_token %}
+          <label class="auth-label">
+            <span>{{ comment_form.body.label }}</span>
+            {{ comment_form.body }}
+          </label>
+          <button class="button" type="submit">Отправить</button>
+        </form>
+      {% else %}
+        <p class="muted comments-panel__login">
+          <a href="{% url 'account_login' %}?next={{ request.path }}%23comments">Войдите</a>,
+          чтобы оставить комментарий.
+        </p>
+      {% endif %}
+
+      {% if comments %}
+        <ul class="comment-list">
+          {% for comment in comments %}
+            <li class="comment" id="comment-{{ comment.pk }}">
+              <div class="comment__meta">
+                <span class="comment__author">{{ comment.author_label }}</span>
+                <time class="comment__date" datetime="{{ comment.created_at|date:'c' }}">{{ comment.created_at|date:"d E Y, H:i" }}</time>
+              </div>
+              {% if comment.is_deleted %}
+                <p class="comment__body comment__body--deleted">Комментарий удалён</p>
+              {% else %}
+                <p class="comment__body">{{ comment.body|linebreaksbr }}</p>
+              {% endif %}
+
+              <div class="comment__actions">
+                {% if not comment.is_deleted and user.is_authenticated %}
+                  <details class="comment-reply">
+                    <summary>Ответить</summary>
+                    <form class="comment-form comment-form--reply" method="post" action="{% url 'comment_add' page.pk %}">
+                      {% csrf_token %}
+                      <input type="hidden" name="parent" value="{{ comment.pk }}">
+                      <label class="auth-label">
+                        <span>Ответ</span>
+                        <textarea name="body" rows="3" class="comment-textarea" required placeholder="Ваш ответ"></textarea>
+                      </label>
+                      <button class="button" type="submit">Ответить</button>
+                    </form>
+                  </details>
+                  {% if comment.author_id == user.id or user.is_staff %}
+                    <form class="comment-delete" method="post" action="{% url 'comment_delete' comment.pk %}" onsubmit="return confirm('Удалить комментарий?');">
+                      {% csrf_token %}
+                      <button type="submit" class="comment-delete__btn">Удалить</button>
+                    </form>
+                  {% endif %}
+                {% endif %}
+              </div>
+
+              {% if comment.replies.all %}
+                <ul class="comment-list comment-list--replies">
+                  {% for reply in comment.replies.all %}
+                    <li class="comment comment--reply" id="comment-{{ reply.pk }}">
+                      <div class="comment__meta">
+                        <span class="comment__author">{{ reply.author_label }}</span>
+                        <time class="comment__date" datetime="{{ reply.created_at|date:'c' }}">{{ reply.created_at|date:"d E Y, H:i" }}</time>
+                      </div>
+                      {% if reply.is_deleted %}
+                        <p class="comment__body comment__body--deleted">Комментарий удалён</p>
+                      {% else %}
+                        <p class="comment__body">{{ reply.body|linebreaksbr }}</p>
+                        {% if user.is_authenticated %}
+                          {% if reply.author_id == user.id or user.is_staff %}
+                            <form class="comment-delete" method="post" action="{% url 'comment_delete' reply.pk %}" onsubmit="return confirm('Удалить комментарий?');">
+                              {% csrf_token %}
+                              <button type="submit" class="comment-delete__btn">Удалить</button>
+                            </form>
+                          {% endif %}
+                        {% endif %}
+                      {% endif %}
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">Пока нет комментариев.</p>
+      {% endif %}
+    </div>
+  </aside>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/comments-panel.js' %}" defer></script>
 {% endblock %}

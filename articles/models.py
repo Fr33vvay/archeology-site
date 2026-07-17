@@ -117,7 +117,9 @@ class ArticlePage(Page):
             )
             .order_by("created_at")
         )
-        context["comments"] = roots
+        roots_list = list(roots)
+        context["comments"] = roots_list
+        context["comments_preview"] = roots_list[:3]
         context["comment_form"] = CommentForm()
         context["comments_count"] = Comment.objects.filter(article=self).count()
         return context
