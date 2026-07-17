@@ -1,0 +1,40 @@
+{% extends "account/base_manage.html" %}
+{% load i18n %}
+{% load socialaccount %}
+
+{% block title %}Вход{% endblock %}
+
+{% block auth_content %}
+<h1 class="page-title">Вход</h1>
+<p class="lede">Войдите по российской почте или через ВКонтакте.</p>
+
+{% get_providers as socialaccount_providers %}
+{% if socialaccount_providers %}
+  <div class="auth-social">
+    <a class="button button--vk" href="{% provider_login_url 'vk' %}">Войти через VK</a>
+  </div>
+  <p class="auth-divider"><span>или по почте</span></p>
+{% endif %}
+
+<form class="auth-form" method="post" action="{% url 'account_login' %}">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  {% for field in form %}
+    {% if field.name != 'remember' %}
+      <label class="auth-label">
+        <span>{{ field.label }}</span>
+        {{ field }}
+        {% if field.errors %}<span class="auth-error">{{ field.errors|striptags }}</span>{% endif %}
+      </label>
+    {% endif %}
+  {% endfor %}
+  {% if redirect_field_value %}
+    <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+  {% endif %}
+  <button class="button" type="submit">Войти</button>
+</form>
+
+<p class="muted" style="margin-top:1.25rem;">
+  Нет аккаунта? <a href="{% url 'account_signup' %}">Зарегистрироваться</a>
+</p>
+{% endblock %}
