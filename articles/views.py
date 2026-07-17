@@ -33,7 +33,8 @@ def add_comment(request, page_id):
     else:
         for err in _form_error_messages(form):
             messages.error(request, err)
-    return redirect(article.url + "#comments")
+    # ?comments=1 — сразу открытая панель без «прыжка» ширины после JS
+    return redirect(article.get_url(request) + "?comments=1#comments")
 
 
 @login_required
@@ -47,4 +48,4 @@ def delete_comment(request, comment_id):
         raise Http404
     comment.soft_delete()
     messages.success(request, "Комментарий удалён.")
-    return redirect(article.url + "#comments")
+    return redirect(article.get_url(request) + "?comments=1#comments")

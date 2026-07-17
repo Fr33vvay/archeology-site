@@ -2,7 +2,8 @@
 {% load static wagtailcore_tags wagtailimages_tags %}
 
 {% block content %}
-<div class="article-with-comments" data-article-layout>
+{% with comments_open=request.GET.comments %}
+<div class="article-with-comments{% if comments_open %} is-comments-open{% endif %}" data-article-layout>
   <article class="article">
     <p class="meta">
       {% if page.first_published_at %}{{ page.first_published_at|date:"d E Y" }}{% endif %}
@@ -26,12 +27,12 @@
   </article>
 
   <aside
-    class="comments-panel"
+    class="comments-panel{% if comments_open %} is-open{% endif %}"
     id="comments"
     data-comments-panel
-    {% if messages %}data-open-on-load="1"{% endif %}
+    {% if comments_open %}data-open-on-load="1"{% endif %}
   >
-    <button type="button" class="comments-panel__peek" data-comments-open aria-expanded="false">
+    <button type="button" class="comments-panel__peek" data-comments-open aria-expanded="{% if comments_open %}true{% else %}false{% endif %}"{% if comments_open %} hidden{% endif %}>
       <span class="comments-panel__peek-title">
         Комментарии{% if comments_count %} · {{ comments_count }}{% endif %}
       </span>
@@ -54,7 +55,7 @@
       <span class="comments-panel__peek-hint">Открыть</span>
     </button>
 
-    <div class="comments-panel__drawer" data-comments-drawer hidden>
+    <div class="comments-panel__drawer" data-comments-drawer{% if not comments_open %} hidden{% endif %}>
       <div class="comments-panel__drawer-head">
         <h2 class="comments-panel__title">
           Комментарии{% if comments_count %} ({{ comments_count }}){% endif %}
@@ -159,6 +160,7 @@
     </div>
   </aside>
 </div>
+{% endwith %}
 {% endblock %}
 
 {% block extra_js %}

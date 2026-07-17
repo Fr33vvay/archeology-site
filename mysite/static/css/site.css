@@ -62,7 +62,6 @@ a:hover {
 .wrap {
   width: min(100% - 2rem, var(--wide));
   margin-inline: auto;
-  transition: width 0.28s ease, max-width 0.28s ease, margin 0.28s ease;
 }
 
 /* При открытых комментариях — почти вся ширина экрана, прижато влево */
@@ -263,7 +262,6 @@ a:hover {
     column-gap: 2rem;
     align-items: start;
     justify-content: start;
-    transition: grid-template-columns 0.28s ease;
   }
 
   .article-with-comments .article {
@@ -568,20 +566,35 @@ a:hover {
 }
 
 .comment-form--reply {
-  margin: 0.75rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0.85rem 0 0;
   max-width: none;
   width: 100%;
+  box-sizing: border-box;
+}
+
+.comment-form--reply .auth-label {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .comment-form--reply .comment-textarea {
-  min-height: 14rem;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 16rem;
   font-size: 1.05rem;
   line-height: 1.55;
-  width: 100%;
 }
 
 .comment-textarea,
 .comment-form textarea {
+  display: block;
+  box-sizing: border-box;
   width: 100%;
   padding: 0.65rem 0.8rem;
   border: 1px solid var(--line);
@@ -639,16 +652,24 @@ a:hover {
 
 .comment__actions {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.6rem 1rem;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
   margin-top: 0.4rem;
+}
+
+/* details в flex по умолчанию сжимается по контенту — растягиваем на всю колонку */
+.comment-reply {
+  display: block;
+  width: 100%;
+  min-width: 0;
 }
 
 .comment-reply summary {
   cursor: pointer;
   color: var(--accent);
   font-size: 0.85rem;
+  width: fit-content;
 }
 
 .comment-delete__btn {
