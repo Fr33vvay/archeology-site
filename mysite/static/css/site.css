@@ -62,6 +62,16 @@ a:hover {
 .wrap {
   width: min(100% - 2rem, var(--wide));
   margin-inline: auto;
+  transition: width 0.28s ease, max-width 0.28s ease, margin 0.28s ease;
+}
+
+/* При открытых комментариях контент шире и прижат влево */
+@media (min-width: 1040px) {
+  .site-main:has(.article-with-comments.is-comments-open) .wrap {
+    width: min(100% - 2rem, 1280px);
+    margin-left: 1rem;
+    margin-right: auto;
+  }
 }
 
 .site-header__inner {
@@ -251,46 +261,29 @@ a:hover {
     grid-template-columns: minmax(0, var(--max)) minmax(240px, 280px);
     column-gap: 2rem;
     align-items: start;
-    justify-content: space-between;
+    justify-content: start;
+    transition: grid-template-columns 0.28s ease;
   }
 
   .article-with-comments .article {
     width: 100%;
   }
 
-  /* Раскрытая панель — широкая шторка справа, почти на весь экран */
-  .comments-panel.is-open {
-    position: fixed;
-    top: 4.75rem;
-    right: 1rem;
-    bottom: 1rem;
-    left: auto;
-    width: min(52rem, calc(100vw - 2rem));
-    max-height: none;
-    z-index: 40;
-    margin: 0;
+  /* Раскрытие: статья слева, широкая колонка комментариев справа — без перекрытия */
+  .article-with-comments.is-comments-open {
+    grid-template-columns: minmax(0, 640px) minmax(360px, 420px);
+    column-gap: 2.25rem;
   }
 
-  .comments-panel.is-open .comments-panel__drawer {
-    height: 100%;
-    max-height: none;
+  .article-with-comments.is-comments-open .comments-panel {
+    position: sticky;
+    top: 5.5rem;
+    max-height: calc(100vh - 6.5rem);
+  }
+
+  .article-with-comments.is-comments-open .comments-panel__drawer {
+    max-height: calc(100vh - 6.5rem);
     overflow: auto;
-    box-shadow: -8px 0 32px rgba(28, 26, 23, 0.12);
-  }
-
-  .comments-panel-backdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(28, 26, 23, 0.28);
-    z-index: 35;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-  }
-
-  .comments-panel-backdrop.is-visible {
-    display: block;
   }
 }
 
