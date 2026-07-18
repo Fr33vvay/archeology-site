@@ -370,6 +370,31 @@ class BlogPostUniqueViewTests(BlogTestBase):
         response = self.client.post(f"/blog/posts/view/{self.post.pk}/")
         self.assertEqual(response.status_code, 404)
 
+    def test_author_view_does_not_increment(self):
+        """Автор поста не создаёт UniqueView и не увеличивает счётчик."""
+        self.client.login(username="admin", password="pass-12345")
+        response = self.client.post(f"/blog/posts/view/{self.post.pk}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"count": 0, "created": False})
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.views_count, 0)
+        self.assertEqual(BlogPostUniqueView.objects.filter(post=self.post).count(), 0)
+
+    def test_other_user_increments_post_view(self):
+        """Другой залогиненный пользователь увеличивает счётчик поста."""
+        self.client.login(username="reader", password="pass-12345")
+        response = self.client.post(f"/blog/posts/view/{self.post.pk}/")
+        self.assertEqual(response.json(), {"count": 1, "created": True})
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.views_count, 1)
+
+    def test_guest_increments_post_view(self):
+        """Гость увеличивает счётчик поста блога."""
+        response = self.client.post(f"/blog/posts/view/{self.post.pk}/")
+        self.assertEqual(response.json(), {"count": 1, "created": True})
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.views_count, 1)
+
     def test_ru_views_word_declension(self):
         """Проверяет русское склонение слова «просмотр»."""
         self.assertEqual(ru_views_word(1), "просмотр")

@@ -56,11 +56,26 @@ def attach_vid_cookie(response: JsonResponse, new_vid: str | None) -> JsonRespon
     return response
 
 
-def record_unique_view(*, request: HttpRequest, content_obj, view_model, fk_field: str):
+def record_unique_view(
+    *,
+    request: HttpRequest,
+    content_obj,
+    view_model,
+    fk_field: str,
+    author_id: int | None = None,
+):
     """
     Создаёт запись уникального просмотра и инкрементирует views_count при первом визите.
-    Возвращает JsonResponse {count, created}.
+    Просмотр автора (author_id) не учитывается. Возвращает JsonResponse {count, created}.
     """
+    if (
+        author_id is not None
+        and request.user.is_authenticated
+        and request.user.pk == author_id
+    ):
+        content_obj.refresh_from_db(fields=["views_count"])
+        return JsonResponse({"count": content_obj.views_count, "created": False})
+
     visitor_key, new_vid = resolve_visitor_key(request)
     created = False
     try:

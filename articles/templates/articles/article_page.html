@@ -13,10 +13,13 @@
   <article
     class="article"
     data-article-top
-    data-view-track
-    data-view-url="{% url 'article_view' page.pk %}"
   >
-    <p class="meta">
+    {# Трекаем компактный блок вверху: длинный <article> с IO threshold > 0 не срабатывает #}
+    <p
+      class="meta"
+      data-view-track
+      data-view-url="{% url 'article_view' page.pk %}"
+    >
       {% if page.first_published_at %}{{ page.first_published_at|date:"d E Y" }} · {% endif %}
       <span data-view-count>{{ page.views_count }}</span>
       <span data-view-label>{{ page.views_count|ru_views }}</span>

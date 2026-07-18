@@ -53,6 +53,8 @@
     return;
   }
 
+  // threshold 0: достаточно 1px в viewport. Иначе у длинной статьи
+  // (data-view-track на всём <article>) 40% высоты никогда не видно.
   var observer = new IntersectionObserver(
     function (entries) {
       entries.forEach(function (entry) {
@@ -61,7 +63,7 @@
         sendView(entry.target);
       });
     },
-    { threshold: 0.4 }
+    { threshold: 0 }
   );
 
   Array.prototype.forEach.call(targets, function (el) {

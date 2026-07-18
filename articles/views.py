@@ -35,6 +35,7 @@ def record_article_view(request, page_id):
         content_obj=article,
         view_model=ArticleUniqueView,
         fk_field="article",
+        author_id=article.owner_id,
     )
 
 

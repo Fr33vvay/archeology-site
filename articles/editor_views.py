@@ -234,6 +234,7 @@ def create_article(request):
                 slug=_unique_slug(parent, title),
                 intro=(request.POST.get("intro") or "").strip()[:500],
                 live=False,
+                owner=request.user,
             )
             article.body = _parse_blocks(request.POST.get("blocks_json", "[]"))
             cover_id = request.POST.get("cover_id")

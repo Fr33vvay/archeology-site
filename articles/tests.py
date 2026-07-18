@@ -645,3 +645,37 @@ class ArticleUniqueViewTests(TestCase):
         self.article.unpublish()
         response = self.client.post(f"/articles/{self.article.pk}/view/")
         self.assertEqual(response.status_code, 404)
+
+    def test_owner_view_does_not_increment(self):
+        """Владелец статьи (owner) не создаёт UniqueView и не увеличивает счётчик."""
+        self.article.owner = self.user
+        self.article.save(update_fields=["owner"])
+        self.client.login(username="viewer", password="pass-12345")
+        response = self.client.post(f"/articles/{self.article.pk}/view/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"count": 0, "created": False})
+        self.article.refresh_from_db()
+        self.assertEqual(self.article.views_count, 0)
+        self.assertEqual(ArticleUniqueView.objects.filter(article=self.article).count(), 0)
+
+    def test_other_user_increments_article_view(self):
+        """Другой залогиненный пользователь увеличивает счётчик статьи."""
+        owner = User.objects.create_user(
+            username="owner", email="owner@yandex.ru", password="pass-12345"
+        )
+        self.article.owner = owner
+        self.article.save(update_fields=["owner"])
+        self.client.login(username="viewer", password="pass-12345")
+        response = self.client.post(f"/articles/{self.article.pk}/view/")
+        self.assertEqual(response.json(), {"count": 1, "created": True})
+        self.article.refresh_from_db()
+        self.assertEqual(self.article.views_count, 1)
+
+    def test_guest_increments_when_owner_set(self):
+        """Гость увеличивает счётчик статьи даже если у неё задан owner."""
+        self.article.owner = self.user
+        self.article.save(update_fields=["owner"])
+        response = self.client.post(f"/articles/{self.article.pk}/view/")
+        self.assertEqual(response.json(), {"count": 1, "created": True})
+        self.article.refresh_from_db()
+        self.assertEqual(self.article.views_count, 1)

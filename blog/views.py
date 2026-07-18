@@ -80,6 +80,7 @@ def record_post_view(request, post_id):
         content_obj=post,
         view_model=BlogPostUniqueView,
         fk_field="post",
+        author_id=post.author_id,
     )
 
 
