@@ -122,8 +122,21 @@ a:hover {
   width: 1.4rem;
   height: 1.4rem;
   flex-shrink: 0;
-  /* Одинаковая «коробка» у всех SVG, как у домика */
-  overflow: hidden;
+  overflow: visible;
+  transform-origin: center;
+}
+
+/* Точечная подгонка оптического размера на мобилке */
+.nav__link[data-nav="articles"] .nav__icon {
+  transform: scale(1.2);
+}
+
+.nav__link[data-nav="gallery"] .nav__icon {
+  transform: scale(1.1);
+}
+
+.nav__link[data-nav="contacts"] .nav__icon {
+  transform: scale(1.2);
 }
 
 @media (max-width: 820px) {
