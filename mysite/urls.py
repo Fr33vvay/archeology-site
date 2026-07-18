@@ -7,6 +7,7 @@ from wagtail import urls as wagtail_urls
 from wagtail.documents import urls as wagtaildocs_urls
 
 from accounts import views as accounts_views
+from articles import editor_views as articles_editor_views
 from articles import views as articles_views
 from blog import views as blog_views
 from search import views as search_views
@@ -28,6 +29,17 @@ urlpatterns = [
         "comments/delete/<int:comment_id>/",
         articles_views.delete_comment,
         name="comment_delete",
+    ),
+    path("articles/new/", articles_editor_views.create_article, name="article_create"),
+    path(
+        "articles/upload-image/",
+        articles_editor_views.upload_article_image,
+        name="article_upload_image",
+    ),
+    path(
+        "articles/<int:page_id>/edit/",
+        articles_editor_views.edit_article,
+        name="article_edit",
     ),
     path("blog/posts/add/", blog_views.add_post, name="blog_post_add"),
     path("blog/posts/edit/<int:post_id>/", blog_views.edit_post, name="blog_post_edit"),

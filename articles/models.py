@@ -129,6 +129,12 @@ class ArticlePage(Page):
         context["comments_preview"] = roots_list[:3]
         context["comment_form"] = CommentForm()
         context["comments_count"] = Comment.objects.filter(article=self).count()
+        has_unpublished = False
+        if request.user.is_authenticated and request.user.is_superuser and self.live:
+            latest = self.get_latest_revision()
+            live_rev = self.live_revision
+            has_unpublished = bool(latest and live_rev and latest.pk != live_rev.pk)
+        context["has_unpublished_draft"] = has_unpublished
         return context
 
 

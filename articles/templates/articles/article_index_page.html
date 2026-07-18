@@ -7,6 +7,12 @@
   <div class="lede">{{ page.intro|richtext }}</div>
 {% endif %}
 
+{% if user.is_superuser %}
+  <p class="article-admin-bar">
+    <a class="button" href="{% url 'article_create' %}">Новая статья</a>
+  </p>
+{% endif %}
+
 {% if articles %}
   <div class="card-list" style="margin-top: 1.5rem;">
     {% for article in articles %}
