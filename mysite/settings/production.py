@@ -1,5 +1,7 @@
 import os
 
+from django.core.exceptions import ImproperlyConfigured
+
 from .base import *  # noqa: F401,F403
 
 DEBUG = False
@@ -48,14 +50,16 @@ DEFAULT_FROM_EMAIL = os.environ.get(
 SERVER_EMAIL = os.environ.get("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
 EMAIL_SUBJECT_PREFIX = os.environ.get("EMAIL_SUBJECT_PREFIX", "[коренцвит.рф] ")
 
-# Без рабочего SMTP регистрация с mandatory снова даст 500 — включаем только при наличии учётки.
-if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
-    ACCOUNT_EMAIL_VERIFICATION = os.environ.get(
-        "ACCOUNT_EMAIL_VERIFICATION", "mandatory"
+# Без SMTP нельзя маскировать verification=none: регистрация должна либо
+# подтверждать почту, либо сайт не должен стартовать в production.
+if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
+    raise ImproperlyConfigured(
+        "Для production нужны EMAIL_HOST_USER и EMAIL_HOST_PASSWORD "
+        "(SMTP). Без них подтверждение почты невозможно."
     )
-else:
-    ACCOUNT_EMAIL_VERIFICATION = "none"
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+ACCOUNT_EMAIL_VERIFICATION = os.environ.get(
+    "ACCOUNT_EMAIL_VERIFICATION", "mandatory"
+)
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 

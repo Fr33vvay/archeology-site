@@ -1,9 +1,16 @@
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase
 
 from accounts.email_domains import is_russian_email
 
 User = get_user_model()
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class RussianEmailTests(SimpleTestCase):
@@ -214,3 +221,72 @@ class ProfileAndSignupTests(TestCase):
         response = self.client.get("/")
         self.assertContains(response, "Профиль")
         self.assertContains(response, "/accounts/profile/")
+
+    def test_confirm_email_get_does_not_verify(self):
+        """GET по ссылке подтверждения только показывает форму, не подтверждает адрес."""
+        from allauth.account.models import EmailAddress, EmailConfirmationHMAC
+        from django.core import mail
+        from django.test.utils import override_settings
+
+        self.assertFalse(settings.ACCOUNT_CONFIRM_EMAIL_ON_GET)
+
+        with override_settings(
+            EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+            ACCOUNT_EMAIL_VERIFICATION="mandatory",
+            ACCOUNT_CONFIRM_EMAIL_ON_GET=False,
+        ):
+            response = self.client.post(
+                "/accounts/signup/",
+                {
+                    "email": "get-confirm@yandex.ru",
+                    "password1": "StrongPass-12345",
+                    "password2": "StrongPass-12345",
+                    "first_name": "Гет",
+                    "last_name": "",
+                },
+            )
+            self.assertEqual(response.status_code, 302)
+            addr = EmailAddress.objects.get(email="get-confirm@yandex.ru")
+            self.assertFalse(addr.verified)
+            key = EmailConfirmationHMAC(addr).key
+            get_resp = self.client.get(f"/accounts/confirm-email/{key}/")
+            self.assertEqual(get_resp.status_code, 200)
+            self.assertContains(get_resp, "Подтвердить")
+            addr.refresh_from_db()
+            self.assertFalse(addr.verified)
+
+            post_resp = self.client.post(f"/accounts/confirm-email/{key}/")
+            self.assertEqual(post_resp.status_code, 302)
+            addr.refresh_from_db()
+            self.assertTrue(addr.verified)
+            self.assertGreaterEqual(len(mail.outbox), 1)
+
+
+class ProductionSmtpGuardTests(SimpleTestCase):
+    def test_production_settings_require_smtp(self):
+        """Без EMAIL_HOST_USER/PASSWORD production падает, а не ставит verification=none."""
+        env = os.environ.copy()
+        env["DJANGO_SECRET_KEY"] = "test-secret-for-smtp-guard"
+        env["EMAIL_HOST_USER"] = ""
+        env["EMAIL_HOST_PASSWORD"] = ""
+        env.pop("DJANGO_SETTINGS_MODULE", None)
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "from django.core.exceptions import ImproperlyConfigured\n"
+                    "try:\n"
+                    "    import mysite.settings.production  # noqa: F401\n"
+                    "except ImproperlyConfigured as exc:\n"
+                    "    assert 'EMAIL_HOST' in str(exc)\n"
+                    "    raise SystemExit(0)\n"
+                    "raise SystemExit('expected ImproperlyConfigured')\n"
+                ),
+            ],
+            cwd=PROJECT_ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr or result.stdout)

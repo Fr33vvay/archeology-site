@@ -103,7 +103,7 @@ ACCOUNT_FORMS = {
 # В production включается mandatory (см. production.py). Локально/в тестах — без обязательного письма.
 ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_UNIQUE_EMAIL = True
-ACCOUNT_CONFIRM_EMAIL_ON_GET = True
+ACCOUNT_CONFIRM_EMAIL_ON_GET = False
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_LOGOUT_ON_GET = False
 LOGIN_REDIRECT_URL = "/"

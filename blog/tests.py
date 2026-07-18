@@ -129,6 +129,20 @@ class BlogPostCreationViewTests(BlogTestBase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(BlogPost.objects.filter(body="Много фото").count(), 0)
 
+    @override_settings(MEDIA_ROOT="/tmp/archeology-blog-test-media")
+    def test_rejects_post_image_with_html_extension(self):
+        """В посте блога файл evil.html с PNG внутри не принимается."""
+        self.client.login(username="admin", password="pass-12345")
+        response = self.client.post(
+            "/blog/posts/add/",
+            {
+                "body": "Ложная картинка",
+                "images": [_png_upload("evil.html")],
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(BlogPost.objects.filter(body="Ложная картинка").count(), 0)
+
 
 class BlogPostPermissionTests(BlogTestBase):
     def test_author_can_edit_own_post(self):

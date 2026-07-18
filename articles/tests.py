@@ -226,6 +226,31 @@ class CommentViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Comment.objects.filter(article=self.article).count(), 0)
 
+    @override_settings(MEDIA_ROOT="/tmp/archeology-test-media")
+    def test_rejects_image_with_html_extension(self):
+        """Файл с расширением .html отклоняется, даже если внутри валидный PNG."""
+        from django import forms as django_forms
+
+        from articles.forms import validate_comment_images
+
+        evil = _png_upload("evil.html")
+        with self.assertRaises(django_forms.ValidationError) as ctx:
+            validate_comment_images([evil])
+        self.assertIn("JPEG", str(ctx.exception))
+
+    @override_settings(MEDIA_ROOT="/tmp/archeology-test-media")
+    def test_saves_image_with_safe_extension(self):
+        """Валидный PNG сохраняется с расширением .png, а не с исходным регистром имени."""
+        self.client.login(username="commenter", password="pass-12345")
+        url = f"/comments/add/{self.article.pk}/"
+        response = self.client.post(
+            url,
+            {"body": "Нормальное фото", "images": [_png_upload("Photo.PNG")]},
+        )
+        self.assertEqual(response.status_code, 302)
+        image = CommentImage.objects.get(comment__body="Нормальное фото")
+        self.assertTrue(image.image.name.lower().endswith(".png"))
+
     def test_author_can_edit_own(self):
         """Автор меняет текст своего комментария."""
         c = Comment.objects.create(

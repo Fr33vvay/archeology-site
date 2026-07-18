@@ -1,31 +1,84 @@
+import os
+from pathlib import Path
+
 from django import forms
+from django.core.files.uploadedfile import SimpleUploadedFile
+from PIL import Image, UnidentifiedImageError
 
 from articles.models import Comment, CommentImage
 
 MAX_COMMENT_IMAGES = 3
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
-ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+PIL_FORMAT_TO_EXT = {
+    "JPEG": ".jpg",
+    "PNG": ".png",
+    "GIF": ".gif",
+    "WEBP": ".webp",
+}
+EXT_TO_CONTENT_TYPE = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+}
+
+
+def _safe_image_basename(name: str) -> str:
+    stem = Path(name or "image").stem
+    stem = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in stem)
+    return (stem[:80] or "image")
 
 
 def validate_comment_images(files, max_count=MAX_COMMENT_IMAGES):
-    """Проверяет список загруженных файлов; возвращает очищенный список."""
+    """Проверяет список загруженных файлов; возвращает очищенный список.
+
+    Не доверяет Content-Type: требует whitelist расширения, открытие через Pillow
+    и сохранение под безопасным именем с расширением по реальному формату.
+    """
     images = [f for f in files if f]
     if len(images) > max_count:
         raise forms.ValidationError(
-            f"Можно прикрепить не больше {MAX_COMMENT_IMAGES} изображений."
+            f"Можно прикрепить не больше {max_count} изображений."
         )
     cleaned = []
     for uploaded in images:
-        content_type = getattr(uploaded, "content_type", "") or ""
-        if content_type not in ALLOWED_IMAGE_TYPES:
+        original_name = getattr(uploaded, "name", "") or ""
+        ext = os.path.splitext(original_name)[1].lower()
+        if ext not in ALLOWED_IMAGE_EXTENSIONS:
             raise forms.ValidationError(
-                "Допустимы только JPEG, PNG, WebP или GIF."
+                "Допустимы только файлы JPEG, PNG, WebP или GIF."
             )
         if uploaded.size > MAX_IMAGE_BYTES:
             raise forms.ValidationError(
                 "Каждое изображение — не больше 5 МБ."
             )
-        cleaned.append(uploaded)
+        try:
+            uploaded.seek(0)
+            with Image.open(uploaded) as img:
+                img.verify()
+            uploaded.seek(0)
+            with Image.open(uploaded) as img:
+                fmt = (img.format or "").upper()
+            if fmt not in PIL_FORMAT_TO_EXT:
+                raise ValueError("unsupported image format")
+        except (UnidentifiedImageError, OSError, ValueError):
+            raise forms.ValidationError(
+                "Файл не является допустимым изображением."
+            ) from None
+
+        safe_ext = PIL_FORMAT_TO_EXT[fmt]
+        uploaded.seek(0)
+        payload = uploaded.read()
+        safe_name = f"{_safe_image_basename(original_name)}{safe_ext}"
+        cleaned.append(
+            SimpleUploadedFile(
+                safe_name,
+                payload,
+                content_type=EXT_TO_CONTENT_TYPE[safe_ext],
+            )
+        )
     return cleaned
 
 
