@@ -50,9 +50,11 @@ docker compose up -d --build
 
 ### Бэкап
 
+БД + медиа → Яндекс Диск (rclone), каждые 2 дня, 14 копий. Подробности и настройка: [BACKUP.md](BACKUP.md).
+
 ```bash
-chmod +x scripts/backup.sh
 ./scripts/backup.sh
+./scripts/setup-backup-cron.sh
 ```
 
 ## Домен и HTTPS
