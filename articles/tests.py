@@ -315,3 +315,249 @@ class CommentViewTests(TestCase):
         self.assertIn("data-comment-lightbox-root", source)
         self.assertIn("lightbox.hidden = false", source)
         self.assertNotIn("showModal", source)
+
+
+class FootnoteAnchorTests(TestCase):
+    """Рабочие якоря сносок и возврата в текст."""
+
+    @classmethod
+    def setUpTestData(cls):
+        root = Page.get_first_root_node()
+        home = HomePage(title="Главная", slug="home-fn")
+        root.add_child(instance=home)
+        home.save_revision().publish()
+        Site.objects.update_or_create(
+            is_default_site=True,
+            defaults={"hostname": "localhost", "root_page": home, "site_name": "Test"},
+        )
+        index = ArticleIndexPage(title="Статьи", slug="articles-fn")
+        home.add_child(instance=index)
+        index.save_revision().publish()
+        article = ArticlePage(
+            title="Статья со сносками",
+            slug="article-fn",
+            intro="intro",
+            body=[
+                {
+                    "type": "paragraph",
+                    "value": (
+                        '<p>Текст со сноской'
+                        '<a href="#fn-1"><sup>1</sup></a>.</p>'
+                    ),
+                },
+                {
+                    "type": "paragraph",
+                    "value": (
+                        "<p></p><ol>"
+                        "<li>Источник. "
+                        '<a href="#fnref-1">↩</a></li>'
+                        "</ol>"
+                    ),
+                },
+            ],
+        )
+        index.add_child(instance=article)
+        article.save_revision().publish()
+        cls.article = ArticlePage.objects.get(pk=article.pk)
+
+    def test_apply_footnote_anchors_adds_ids(self):
+        """Фильтр ставит id на ссылку в тексте и на пункт списка сносок."""
+        from articles.templatetags.article_extras import apply_footnote_anchors
+
+        raw = (
+            '<p>Сноска<a href="#fn-1"><sup>1</sup></a></p>'
+            '<ol><li>Примечание <a href="#fnref-1">↩</a></li></ol>'
+        )
+        html = apply_footnote_anchors(raw)
+        self.assertIn('id="fnref-1"', html)
+        self.assertIn('href="#fn-1"', html)
+        self.assertIn('id="fn-1"', html)
+        self.assertIn('href="#fnref-1"', html)
+        self.assertIn('class="footnote-ref"', html)
+        self.assertIn('class="footnote-back"', html)
+        self.assertIn('class="footnotes"', html)
+
+    def test_article_page_has_bidirectional_footnote_targets(self):
+        """На странице статьи есть цели для перехода к сноске и обратно в текст."""
+        response = self.client.get(self.article.url)
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn('id="fnref-1"', html)
+        self.assertIn('id="fn-1"', html)
+        self.assertIn('href="#fn-1"', html)
+        self.assertIn('href="#fnref-1"', html)
+        # Из текста можно уйти к сноске, из сноски — вернуться
+        self.assertRegex(html, r'id="fnref-1"[^>]*href="#fn-1"|href="#fn-1"[^>]*id="fnref-1"')
+        self.assertRegex(html, r'id="fn-1"[\s\S]*?href="#fnref-1"')
+
+
+class ArticleEditorViewTests(TestCase):
+    """Редактирование статей на сайте: права, черновик и публикация."""
+
+    @classmethod
+    def setUpTestData(cls):
+        root = Page.get_first_root_node()
+        home = HomePage(title="Главная", slug="home-editor")
+        root.add_child(instance=home)
+        home.save_revision().publish()
+        Site.objects.update_or_create(
+            is_default_site=True,
+            defaults={"hostname": "localhost", "root_page": home, "site_name": "Test"},
+        )
+        index = ArticleIndexPage(title="Статьи", slug="articles-editor")
+        home.add_child(instance=index)
+        index.save_revision().publish()
+        article = ArticlePage(
+            title="Живая статья",
+            slug="live-article",
+            intro="intro",
+            body=[{"type": "paragraph", "value": "<p>Живой текст</p>"}],
+        )
+        index.add_child(instance=article)
+        article.save_revision().publish()
+        cls.index = ArticleIndexPage.objects.get(pk=index.pk)
+        cls.article = ArticlePage.objects.get(pk=article.pk)
+        cls.superuser = User.objects.create_superuser(
+            username="editor-admin", email="editor-admin@yandex.ru", password="pass-12345"
+        )
+        cls.staff = User.objects.create_user(
+            username="editor-staff",
+            email="editor-staff@yandex.ru",
+            password="pass-12345",
+            is_staff=True,
+        )
+        cls.reader = User.objects.create_user(
+            username="editor-reader",
+            email="editor-reader@yandex.ru",
+            password="pass-12345",
+        )
+
+    def _blocks_json(self, html):
+        import json
+
+        return json.dumps([{"type": "paragraph", "value": html}])
+
+    def test_anonymous_redirected_from_editor(self):
+        """Аноним перенаправляется на вход при открытии редактора."""
+        response = self.client.get(f"/articles/{self.article.pk}/edit/")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response.url)
+
+    def test_staff_cannot_edit_or_create(self):
+        """Сотрудник без суперпользователя не может править и создавать статьи."""
+        self.client.login(username="editor-staff", password="pass-12345")
+        self.assertEqual(self.client.get(f"/articles/{self.article.pk}/edit/").status_code, 403)
+        self.assertEqual(self.client.get("/articles/new/").status_code, 403)
+        self.assertEqual(
+            self.client.post(
+                "/articles/upload-image/",
+                {"image": _png_upload("x.png")},
+            ).status_code,
+            403,
+        )
+
+    def test_regular_user_cannot_edit(self):
+        """Обычный пользователь не видит редактор статьи."""
+        self.client.login(username="editor-reader", password="pass-12345")
+        self.assertEqual(self.client.get(f"/articles/{self.article.pk}/edit/").status_code, 403)
+
+    def test_superuser_sees_edit_and_create_buttons(self):
+        """Суперпользователь видит кнопки редактирования и создания статьи."""
+        self.client.login(username="editor-admin", password="pass-12345")
+        article_html = self.client.get(self.article.url).content.decode()
+        self.assertIn("Редактировать", article_html)
+        self.assertIn(f"/articles/{self.article.pk}/edit/", article_html)
+        index_html = self.client.get(self.index.url).content.decode()
+        self.assertIn("Новая статья", index_html)
+        self.assertIn("/articles/new/", index_html)
+
+    def test_draft_does_not_change_live_html(self):
+        """Черновик сохраняется, но live-страница остаётся прежней."""
+        self.client.login(username="editor-admin", password="pass-12345")
+        response = self.client.post(
+            f"/articles/{self.article.pk}/edit/",
+            {
+                "title": "Живая статья",
+                "intro": "intro",
+                "blocks_json": self._blocks_json("<p>Текст черновика</p>"),
+                "action": "draft",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        live = self.client.get(self.article.url)
+        self.assertEqual(live.status_code, 200)
+        html = live.content.decode()
+        self.assertIn("Живой текст", html)
+        self.assertNotIn("Текст черновика", html)
+        self.assertIn("Есть неопубликованный черновик", html)
+
+    def test_publish_updates_live_html(self):
+        """Публикация обновляет live-версию статьи."""
+        self.client.login(username="editor-admin", password="pass-12345")
+        response = self.client.post(
+            f"/articles/{self.article.pk}/edit/",
+            {
+                "title": "Живая статья",
+                "intro": "intro",
+                "blocks_json": self._blocks_json("<p>Опубликованный текст</p>"),
+                "action": "publish",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        live = self.client.get(self.article.url)
+        html = live.content.decode()
+        self.assertIn("Опубликованный текст", html)
+        self.assertNotIn("Живой текст", html)
+
+    def test_create_draft_is_not_live(self):
+        """Новая статья в черновике не попадает в публичный список."""
+        self.client.login(username="editor-admin", password="pass-12345")
+        before = ArticlePage.objects.child_of(self.index).count()
+        response = self.client.post(
+            "/articles/new/",
+            {
+                "title": "Черновик статьи",
+                "intro": "скоро",
+                "blocks_json": self._blocks_json("<p>Скрытый текст</p>"),
+                "action": "draft",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(ArticlePage.objects.child_of(self.index).count(), before + 1)
+        draft = ArticlePage.objects.get(title="Черновик статьи")
+        self.assertFalse(draft.live)
+        index_html = self.client.get(self.index.url).content.decode()
+        self.assertNotIn("Черновик статьи", index_html)
+
+    def test_create_and_publish_appears_in_index(self):
+        """Новая статья после публикации видна в разделе «Статьи»."""
+        self.client.login(username="editor-admin", password="pass-12345")
+        response = self.client.post(
+            "/articles/new/",
+            {
+                "title": "Новая публикация",
+                "intro": "intro",
+                "blocks_json": self._blocks_json("<p>Тело новой</p>"),
+                "action": "publish",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        page = ArticlePage.objects.get(title="Новая публикация")
+        self.assertTrue(page.live)
+        index_html = self.client.get(self.index.url).content.decode()
+        self.assertIn("Новая публикация", index_html)
+
+    @override_settings(MEDIA_ROOT="/tmp/archeology-article-editor-media")
+    def test_superuser_can_upload_image(self):
+        """Суперпользователь загружает изображение для редактора статьи."""
+        from wagtail.images.models import Image as WagtailImage
+
+        self.client.login(username="editor-admin", password="pass-12345")
+        response = self.client.post(
+            "/articles/upload-image/",
+            {"image": _png_upload("editor.png"), "title": "Иллюстрация"},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("id", data)
+        self.assertTrue(WagtailImage.objects.filter(pk=data["id"]).exists())

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static wagtailcore_tags wagtailimages_tags %}
+{% load static wagtailcore_tags wagtailimages_tags article_extras %}
 
 {% block nav_comments %}
 <a href="#comments" class="nav-comments" data-comments-nav>
@@ -17,12 +17,21 @@
     <h1 class="page-title">{{ page.title }}</h1>
     {% if page.intro %}<p class="lede">{{ page.intro }}</p>{% endif %}
 
+    {% if user.is_superuser %}
+      <div class="article-admin-bar">
+        <a class="button" href="{% url 'article_edit' page.pk %}">Редактировать</a>
+        {% if has_unpublished_draft %}
+          <span class="article-admin-bar__draft">Есть неопубликованный черновик</span>
+        {% endif %}
+      </div>
+    {% endif %}
+
     <div class="article-body">
       {% for block in page.body %}
         {% if block.block_type == "heading" %}
           <h2 class="block-heading">{{ block.value }}</h2>
         {% elif block.block_type == "paragraph" %}
-          <div class="block-paragraph">{{ block.value|richtext }}</div>
+          <div class="block-paragraph">{{ block.value|richtext|footnote_anchors }}</div>
         {% elif block.block_type == "quote" %}
           <blockquote class="block-quote">{{ block.value }}</blockquote>
         {% else %}
