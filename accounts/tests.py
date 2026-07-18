@@ -306,6 +306,7 @@ class ProductionSmtpGuardTests(SimpleTestCase):
         env["DJANGO_SECRET_KEY"] = "test-secret-for-smtp-guard"
         env["EMAIL_HOST_USER"] = ""
         env["EMAIL_HOST_PASSWORD"] = ""
+        env["EMAIL_ENCRYPTION_KEY"] = "x" * 44
         env.pop("DJANGO_SETTINGS_MODULE", None)
         result = subprocess.run(
             [
@@ -327,6 +328,40 @@ class ProductionSmtpGuardTests(SimpleTestCase):
             text=True,
         )
         self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+
+    def test_production_settings_require_encryption_key(self):
+        """Без EMAIL_ENCRYPTION_KEY production падает громко."""
+        from cryptography.fernet import Fernet
+
+        env = os.environ.copy()
+        env["DJANGO_SECRET_KEY"] = "test-secret-for-enc-guard"
+        env["EMAIL_HOST_USER"] = "smtp@example.com"
+        env["EMAIL_HOST_PASSWORD"] = "secret"
+        env["EMAIL_ENCRYPTION_KEY"] = ""
+        env["FERNET_KEY"] = ""
+        env.pop("DJANGO_SETTINGS_MODULE", None)
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "from django.core.exceptions import ImproperlyConfigured\n"
+                    "try:\n"
+                    "    import mysite.settings.production  # noqa: F401\n"
+                    "except ImproperlyConfigured as exc:\n"
+                    "    assert 'EMAIL_ENCRYPTION' in str(exc)\n"
+                    "    raise SystemExit(0)\n"
+                    "raise SystemExit('expected ImproperlyConfigured')\n"
+                ),
+            ],
+            cwd=PROJECT_ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+        # ключ валидного формата не нужен здесь — только проверка наличия
+        _ = Fernet.generate_key()
 
 
 class WeeklyReportTests(TestCase):
@@ -447,3 +482,76 @@ class WeeklyReportTests(TestCase):
         start, end = previous_week_bounds(now)
         self.assertEqual(start.date().isoformat(), "2026-07-06")
         self.assertEqual(end.date().isoformat(), "2026-07-13")
+
+
+class EmailEncryptionTests(TestCase):
+    def test_email_not_stored_as_plaintext_in_db(self):
+        """После сохранения в БД email хранится не в открытом виде."""
+        from django.db import connection
+
+        user = User.objects.create_user(
+            username="enc-user",
+            email="secret-mail@yandex.ru",
+            password="pass-12345",
+        )
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT email FROM auth_user WHERE id = %s", [user.pk]
+            )
+            row = cursor.fetchone()
+        raw = row[0]
+        self.assertNotEqual(raw, "secret-mail@yandex.ru")
+        self.assertNotIn("secret-mail@yandex.ru", raw)
+        # Через ORM — расшифрованный
+        user.refresh_from_db()
+        self.assertEqual(user.email, "secret-mail@yandex.ru")
+
+    def test_login_by_email_works(self):
+        """Вход по email и паролю работает с зашифрованным email."""
+        User.objects.create_user(
+            username="login-enc",
+            email="login-enc@yandex.ru",
+            password="StrongPass-12345",
+        )
+        response = self.client.post(
+            "/accounts/login/",
+            {"login": "login-enc@yandex.ru", "password": "StrongPass-12345"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.wsgi_request.user.is_authenticated)
+
+    def test_signup_works_with_encryption(self):
+        """Регистрация сохраняет пользователя и шифрует email."""
+        response = self.client.post(
+            "/accounts/signup/",
+            {
+                "email": "signup-enc@yandex.ru",
+                "password1": "StrongPass-12345",
+                "password2": "StrongPass-12345",
+                "first_name": "Анна",
+                "last_name": "",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        user = User.objects.get(email="signup-enc@yandex.ru")
+        self.assertEqual(user.first_name, "Анна")
+        from django.db import connection
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT email FROM auth_user WHERE id = %s", [user.pk]
+            )
+            raw = cursor.fetchone()[0]
+        self.assertNotEqual(raw, "signup-enc@yandex.ru")
+
+    def test_profile_shows_plaintext_email(self):
+        """В профиле показывается нормальный (расшифрованный) email."""
+        User.objects.create_user(
+            username="prof-enc",
+            email="prof-enc@yandex.ru",
+            password="pass-12345",
+        )
+        self.client.login(username="prof-enc", password="pass-12345")
+        response = self.client.get("/accounts/profile/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "prof-enc@yandex.ru")

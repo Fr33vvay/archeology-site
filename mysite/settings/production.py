@@ -57,6 +57,16 @@ if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
         "Для production нужны EMAIL_HOST_USER и EMAIL_HOST_PASSWORD "
         "(SMTP). Без них подтверждение почты невозможно."
     )
+
+EMAIL_ENCRYPTION_KEY = os.environ.get("EMAIL_ENCRYPTION_KEY") or os.environ.get(
+    "FERNET_KEY", ""
+)
+EMAIL_ENCRYPTION_ALLOW_DERIVED_KEY = False
+if not EMAIL_ENCRYPTION_KEY:
+    raise ImproperlyConfigured(
+        "Для production нужен EMAIL_ENCRYPTION_KEY (Fernet). "
+        "Сгенерируйте: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+    )
 ACCOUNT_EMAIL_VERIFICATION = os.environ.get(
     "ACCOUNT_EMAIL_VERIFICATION", "mandatory"
 )

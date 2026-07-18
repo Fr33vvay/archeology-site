@@ -3,6 +3,7 @@ from .base import *  # noqa: F401,F403
 DEBUG = True
 
 SECRET_KEY = "django-insecure-dev-only-change-in-production"
+EMAIL_ENCRYPTION_ALLOW_DERIVED_KEY = True
 
 ALLOWED_HOSTS = ["*"]
 

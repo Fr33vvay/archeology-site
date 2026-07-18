@@ -156,6 +156,13 @@ WAGTAILDOCS_EXTENSIONS = [
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Ключ Fernet для шифрования email (url-safe base64, 32 байта).
+# В DEBUG/тестах при отсутствии ключа используется производный от SECRET_KEY.
+EMAIL_ENCRYPTION_KEY = os.environ.get("EMAIL_ENCRYPTION_KEY") or os.environ.get(
+    "FERNET_KEY", ""
+)
+EMAIL_ENCRYPTION_ALLOW_DERIVED_KEY = True
+
 # Получатели еженедельного отчёта (понедельник ~12:00 Europe/Moscow).
 WEEKLY_REPORT_RECIPIENTS = [
     addr.strip()
