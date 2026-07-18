@@ -26,6 +26,7 @@ echo "==> Push в origin"
 git push origin HEAD
 
 echo "==> Сборка и перезапуск на $DEPLOY_HOST"
-ssh "$DEPLOY_HOST" "cd $DEPLOY_DIR && sudo git pull && sudo docker compose build web && sudo docker compose run --rm web python manage.py migrate --noinput && sudo docker compose up -d web && sudo cp -f nginx/default-ssl.conf nginx/default.conf && sudo docker compose exec -T nginx nginx -t && sudo docker compose exec -T nginx nginx -s reload"
+# default.conf на ВМ — рабочая копия default-ssl.conf; сбрасываем перед pull.
+ssh "$DEPLOY_HOST" "cd $DEPLOY_DIR && sudo git checkout -- nginx/default.conf && sudo git pull && sudo docker compose build web && sudo docker compose run --rm web python manage.py migrate --noinput && sudo docker compose up -d web && sudo cp -f nginx/default-ssl.conf nginx/default.conf && sudo docker compose exec -T nginx nginx -t && sudo docker compose exec -T nginx nginx -s reload"
 
 echo "==> Готово"
