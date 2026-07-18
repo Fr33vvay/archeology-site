@@ -46,6 +46,16 @@ urlpatterns = [
         articles_views.record_article_view,
         name="article_view",
     ),
+    path(
+        "articles/<int:page_id>/favorite/",
+        articles_views.toggle_favorite,
+        name="article_favorite",
+    ),
+    path(
+        "articles/favorites/<int:fav_id>/remove/",
+        articles_views.remove_favorite,
+        name="article_favorite_remove",
+    ),
     path("blog/posts/add/", blog_views.add_post, name="blog_post_add"),
     path("blog/posts/edit/<int:post_id>/", blog_views.edit_post, name="blog_post_edit"),
     path("blog/posts/delete/<int:post_id>/", blog_views.delete_post, name="blog_post_delete"),

@@ -1,12 +1,16 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import Http404, HttpResponseForbidden
+from django.http import Http404, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 
 from articles.forms import CommentEditForm, CommentForm
-from articles.models import ArticlePage, ArticleUniqueView, Comment
+from articles.models import ArticlePage, ArticleUniqueView, Comment, FavoriteArticle
 from mysite.unique_views import record_unique_view
+
+
+def _wants_json(request):
+    return request.headers.get("x-requested-with") == "XMLHttpRequest"
 
 
 def _form_error_messages(form, fallback="Не удалось отправить комментарий."):
@@ -95,3 +99,32 @@ def delete_comment(request, comment_id):
     comment.soft_delete()
     messages.success(request, "Комментарий удалён.")
     return _redirect_to_comments(request, article)
+
+
+@login_required
+@require_POST
+def toggle_favorite(request, page_id):
+    article = get_object_or_404(ArticlePage.objects.live().public(), pk=page_id)
+    fav, created = FavoriteArticle.objects.get_or_create(
+        user=request.user, article=article
+    )
+    if not created:
+        fav.delete()
+        favorited = False
+        toast = "Статья убрана из избранного"
+    else:
+        favorited = True
+        toast = "Статья сохранена — смотрите в профиле"
+    if _wants_json(request):
+        return JsonResponse({"favorited": favorited, "toast": toast})
+    messages.success(request, toast)
+    return redirect(article.get_url(request) or "/")
+
+
+@login_required
+@require_POST
+def remove_favorite(request, fav_id):
+    fav = get_object_or_404(FavoriteArticle, pk=fav_id, user=request.user)
+    fav.delete()
+    messages.success(request, "Статья убрана из избранного")
+    return redirect("account_profile")

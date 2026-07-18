@@ -704,3 +704,114 @@ class ArticleUniqueViewTests(TestCase):
         self.assertEqual(response.json(), {"count": 1, "created": True})
         self.article.refresh_from_db()
         self.assertEqual(self.article.views_count, 1)
+
+
+class FavoriteArticleTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        root = Page.get_first_root_node()
+        home = HomePage.objects.first()
+        if not home:
+            home = HomePage(title="Главная", slug="home-fav")
+            root.add_child(instance=home)
+            home.save_revision().publish()
+        Site.objects.update_or_create(
+            is_default_site=True,
+            defaults={"hostname": "localhost", "root_page": home, "site_name": "Test"},
+        )
+        index = ArticleIndexPage.objects.child_of(home).first()
+        if not index:
+            index = ArticleIndexPage(title="Статьи", slug="articles-fav")
+            home.add_child(instance=index)
+            index.save_revision().publish()
+        article = ArticlePage(title="Избранная статья", slug="fav-article", intro="intro")
+        index.add_child(instance=article)
+        article.save_revision().publish()
+        other = ArticlePage(title="Чужая статья", slug="other-fav-article", intro="")
+        index.add_child(instance=other)
+        other.save_revision().publish()
+        cls.article = article
+        cls.other_article = other
+        cls.user = User.objects.create_user(
+            username="fav-user", email="fav@yandex.ru", password="pass-12345"
+        )
+        cls.other = User.objects.create_user(
+            username="fav-other", email="fav-other@yandex.ru", password="pass-12345"
+        )
+
+    def test_add_and_remove_favorite(self):
+        """Пользователь добавляет статью в избранное и убирает её."""
+        from articles.models import FavoriteArticle
+
+        self.client.login(username="fav-user", password="pass-12345")
+        add = self.client.post(
+            f"/articles/{self.article.pk}/favorite/",
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(add.status_code, 200)
+        self.assertTrue(add.json()["favorited"])
+        self.assertEqual(
+            FavoriteArticle.objects.filter(user=self.user, article=self.article).count(),
+            1,
+        )
+        remove = self.client.post(
+            f"/articles/{self.article.pk}/favorite/",
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(remove.status_code, 200)
+        self.assertFalse(remove.json()["favorited"])
+        self.assertEqual(
+            FavoriteArticle.objects.filter(user=self.user, article=self.article).count(),
+            0,
+        )
+
+    def test_user_sees_only_own_favorites(self):
+        """В профиле видны только свои избранные статьи."""
+        from articles.models import FavoriteArticle
+
+        FavoriteArticle.objects.create(user=self.user, article=self.article)
+        FavoriteArticle.objects.create(user=self.other, article=self.other_article)
+        self.client.login(username="fav-user", password="pass-12345")
+        response = self.client.get("/accounts/profile/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.article.title)
+        self.assertNotContains(response, self.other_article.title)
+
+    def test_guest_favorite_redirects_to_login(self):
+        """Гость при toggle избранного перенаправляется на вход."""
+        response = self.client.post(f"/articles/{self.article.pk}/favorite/")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response.url)
+
+    def test_toggle_returns_json_for_ajax(self):
+        """AJAX-запрос получает JSON с флагом favorited и сообщением."""
+        self.client.login(username="fav-user", password="pass-12345")
+        response = self.client.post(
+            f"/articles/{self.article.pk}/favorite/",
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["favorited"])
+        self.assertIn("toast", data)
+        self.assertIn("профиле", data["toast"].lower())
+
+    def test_profile_remove_favorite(self):
+        """Из профиля можно удалить статью из избранного."""
+        from articles.models import FavoriteArticle
+
+        fav = FavoriteArticle.objects.create(user=self.user, article=self.article)
+        self.client.login(username="fav-user", password="pass-12345")
+        response = self.client.post(f"/articles/favorites/{fav.pk}/remove/")
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(FavoriteArticle.objects.filter(pk=fav.pk).exists())
+
+    def test_cannot_remove_others_favorite(self):
+        """Нельзя удалить чужое избранное."""
+        from articles.models import FavoriteArticle
+
+        fav = FavoriteArticle.objects.create(user=self.other, article=self.article)
+        self.client.login(username="fav-user", password="pass-12345")
+        response = self.client.post(f"/articles/favorites/{fav.pk}/remove/")
+        self.assertIn(response.status_code, (403, 404))
+        self.assertTrue(FavoriteArticle.objects.filter(pk=fav.pk).exists())

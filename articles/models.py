@@ -136,7 +136,45 @@ class ArticlePage(Page):
             live_rev = self.live_revision
             has_unpublished = bool(latest and live_rev and latest.pk != live_rev.pk)
         context["has_unpublished_draft"] = has_unpublished
+        is_favorited = False
+        if request.user.is_authenticated:
+            is_favorited = FavoriteArticle.objects.filter(
+                user=request.user, article=self
+            ).exists()
+        context["is_favorited"] = is_favorited
         return context
+
+
+class FavoriteArticle(models.Model):
+    """Закладка: статья в избранном у пользователя."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="favorite_articles",
+        verbose_name="Пользователь",
+    )
+    article = models.ForeignKey(
+        ArticlePage,
+        on_delete=models.CASCADE,
+        related_name="favorited_by",
+        verbose_name="Статья",
+    )
+    created_at = models.DateTimeField("Добавлено", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Избранная статья"
+        verbose_name_plural = "Избранные статьи"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "article"],
+                name="unique_user_favorite_article",
+            ),
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user_id} → статья #{self.article_id}"
 
 
 class ArticleUniqueView(models.Model):

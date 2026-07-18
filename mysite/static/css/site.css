@@ -1280,6 +1280,114 @@ a.footnote-back {
   border-top: 1px solid var(--line);
 }
 
+.profile-favorites {
+  margin-top: 2rem;
+}
+
+.profile-favorites__title {
+  font-size: 1.25rem;
+  margin: 0 0 0.75rem;
+}
+
+.profile-favorites__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.profile-favorites__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.profile-favorites__remove {
+  margin: 0;
+}
+
+.button--quiet {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.65rem;
+  cursor: pointer;
+}
+
+.button--quiet:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.article-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0.75rem 0 1.25rem;
+}
+
+.favorite-form {
+  display: inline-flex;
+  margin: 0;
+}
+
+.favorite-button {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  padding: 0.4rem 0.85rem;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.favorite-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.favorite-button.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.favorite-button--guest {
+  color: var(--muted);
+}
+
+.favorite-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%) translateY(0.5rem);
+  background: var(--ink, #1a1a1a);
+  color: #fff;
+  padding: 0.7rem 1.1rem;
+  font-size: 0.95rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 40;
+  max-width: min(90vw, 28rem);
+  text-align: center;
+}
+
+.favorite-toast.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 .home-feed {
   display: grid;
   grid-template-columns: 1fr;

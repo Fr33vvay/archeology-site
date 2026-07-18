@@ -30,6 +30,25 @@
   <button class="button" type="submit">Сохранить</button>
 </form>
 
+<section class="profile-favorites">
+  <h2 class="profile-favorites__title">Избранное</h2>
+  {% if favorites %}
+    <ul class="profile-favorites__list">
+      {% for fav in favorites %}
+        <li class="profile-favorites__item">
+          <a href="{{ fav.article.url }}">{{ fav.article.title }}</a>
+          <form method="post" action="{% url 'article_favorite_remove' fav.pk %}" class="profile-favorites__remove">
+            {% csrf_token %}
+            <button type="submit" class="button button--quiet">Убрать</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">Пока нет избранных статей. Добавляйте их кнопкой на странице статьи.</p>
+  {% endif %}
+</section>
+
 <p class="profile-logout">
   <a href="{% url 'account_logout' %}">Выйти из аккаунта</a>
 </p>
