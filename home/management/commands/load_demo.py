@@ -155,7 +155,6 @@ class Command(BaseCommand):
                 title="Демо: Методика фиксации находок",
                 slug="demo-article-1",
                 intro="Краткий демо-текст о полевой фиксации и иллюстрациях в статье.",
-                cover=cover,
                 body=[
                     {"type": "heading", "value": "Введение"},
                     {

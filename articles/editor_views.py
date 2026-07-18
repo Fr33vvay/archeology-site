@@ -158,12 +158,6 @@ def _apply_page_fields(page: ArticlePage, request) -> None:
     page.intro = (request.POST.get("intro") or "").strip()[:500]
     page.body = _parse_blocks(request.POST.get("blocks_json", "[]"))
 
-    cover_id = request.POST.get("cover_id")
-    if cover_id:
-        page.cover_id = int(cover_id)
-    elif request.POST.get("clear_cover") == "1":
-        page.cover = None
-
 
 @login_required
 @require_http_methods(["GET", "POST"])
@@ -237,9 +231,6 @@ def create_article(request):
                 owner=request.user,
             )
             article.body = _parse_blocks(request.POST.get("blocks_json", "[]"))
-            cover_id = request.POST.get("cover_id")
-            if cover_id:
-                article.cover_id = int(cover_id)
             parent.add_child(instance=article)
             revision = article.save_revision(user=request.user, log_action=True)
             if action == "publish":

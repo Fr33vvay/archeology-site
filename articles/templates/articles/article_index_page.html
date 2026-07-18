@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load wagtailcore_tags wagtailimages_tags %}
+{% load wagtailcore_tags %}
 
 {% block content %}
 <h1 class="page-title">{{ page.title }}</h1>
@@ -20,17 +20,9 @@
         {% if article.first_published_at %}
           <p class="meta card__meta">{{ article.first_published_at|date:"d E Y" }}</p>
         {% endif %}
-        <div class="card__row">
-          {% if article.cover %}
-            <a class="card__cover" href="{% pageurl article %}" tabindex="-1" aria-hidden="true">
-              {% image article.cover fill-280x280 as thumb %}
-              <img src="{{ thumb.url }}" alt="">
-            </a>
-          {% endif %}
-          <div class="card__body">
-            <h2 class="card__title"><a href="{% pageurl article %}">{{ article.title }}</a></h2>
-            {% if article.intro %}<p class="muted card__intro">{{ article.intro }}</p>{% endif %}
-          </div>
+        <div class="card__body">
+          <h2 class="card__title"><a href="{% pageurl article %}">{{ article.title }}</a></h2>
+          {% if article.intro %}<p class="muted card__intro">{{ article.intro }}</p>{% endif %}
         </div>
       </article>
     {% endfor %}

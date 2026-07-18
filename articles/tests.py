@@ -515,6 +515,23 @@ class ArticleEditorViewTests(TestCase):
         self.assertIn("Текст сноски", source)
         self.assertIn("Точно удалить этот блок?", source)
 
+    def test_editor_and_lists_have_no_article_cover(self):
+        """У статей нет обложки: ни в редакторе, ни в списках на сайте."""
+        field_names = {f.name for f in ArticlePage._meta.get_fields()}
+        self.assertNotIn("cover", field_names)
+        self.client.login(username="editor-admin", password="pass-12345")
+        edit_html = self.client.get(f"/articles/{self.article.pk}/edit/").content.decode()
+        self.assertNotIn("cover_id", edit_html)
+        self.assertNotIn("Обложка", edit_html)
+        self.assertNotIn("data-cover", edit_html)
+        index_html = self.client.get(self.index.url).content.decode()
+        self.assertNotIn("card__cover", index_html)
+        home_html = self.client.get("/").content.decode()
+        self.assertNotIn("card__cover", home_html)
+        source = (STATIC_JS / "article-editor.js").read_text(encoding="utf-8")
+        self.assertNotIn("data-cover-file", source)
+        self.assertNotIn("обложку", source)
+
     def test_draft_does_not_change_live_html(self):
         """Черновик сохраняется, но live-страница остаётся прежней."""
         self.client.login(username="editor-admin", password="pass-12345")

@@ -74,16 +74,6 @@ class ArticlePage(Page):
         blank=True,
         verbose_name="Содержание",
     )
-    cover = models.ForeignKey(
-        "wagtailimages.Image",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="+",
-        verbose_name="Обложка",
-        help_text="Маленькая картинка в списках статей (на главной и в разделе «Статьи»). "
-        "Внутри самой статьи не показывается — иллюстрации добавляйте в «Содержание».",
-    )
     views_count = models.PositiveIntegerField("Просмотры", default=0, editable=False)
 
     search_fields = Page.search_fields + [
@@ -93,7 +83,6 @@ class ArticlePage(Page):
 
     content_panels = Page.content_panels + [
         FieldPanel("intro"),
-        FieldPanel("cover"),
         FieldPanel("body"),
     ]
 

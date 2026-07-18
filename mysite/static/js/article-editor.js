@@ -382,25 +382,6 @@
     }
   });
 
-  var coverFile = form.querySelector("[data-cover-file]");
-  var coverId = form.querySelector("[data-cover-id]");
-  var coverPreview = form.querySelector("[data-cover-preview]");
-  if (coverFile) {
-    coverFile.addEventListener("change", function (ev) {
-      var file = ev.target.files && ev.target.files[0];
-      if (!file) return;
-      uploadImage(file)
-        .then(function (data) {
-          coverId.value = data.id;
-          coverPreview.src = data.url;
-          coverPreview.hidden = false;
-        })
-        .catch(function () {
-          alert("Не удалось загрузить обложку.");
-        });
-    });
-  }
-
   function fieldValue(el) {
     var field = el.querySelector("[data-field=value]");
     if (!field) return "";

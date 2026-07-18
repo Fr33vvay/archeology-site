@@ -38,20 +38,6 @@
           <textarea name="intro" rows="2" maxlength="500">{{ article.intro }}</textarea>
         </label>
 
-        <div class="article-editor__cover" data-cover>
-          <span class="auth-label"><span>Обложка (для списков)</span></span>
-          <input type="hidden" name="cover_id" value="{% if article.cover_id %}{{ article.cover_id }}{% endif %}" data-cover-id>
-          {% if article.cover %}
-            <img src="{{ article.cover.file.url }}" alt="" class="article-editor__cover-preview" data-cover-preview>
-          {% else %}
-            <img src="" alt="" class="article-editor__cover-preview" data-cover-preview hidden>
-          {% endif %}
-          <div class="article-editor__row">
-            <input type="file" accept="image/*" data-cover-file>
-            <label class="article-editor__check"><input type="checkbox" name="clear_cover" value="1"> Убрать обложку</label>
-          </div>
-        </div>
-
         <h2 class="section-title">Содержание</h2>
         <p class="muted">Текст набирайте как в Word: выделите фрагмент и нажмите кнопку на панели над полем. Сноска — курсор в нужном месте, кнопка «Сноска», затем текст примечания. Картинки — отдельным блоком.</p>
 
