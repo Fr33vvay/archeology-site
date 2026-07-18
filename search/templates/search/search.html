@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% load wagtailcore_tags %}
 
 {% block title %}Поиск{% endblock %}
 
@@ -7,7 +6,7 @@
 <h1 class="page-title">Поиск</h1>
 
 <form class="search-form" action="{% url 'search' %}" method="get">
-  <input type="text" name="query" value="{{ search_query|default:'' }}" placeholder="Найти статью или страницу…" aria-label="Запрос">
+  <input type="text" name="query" value="{{ search_query|default:'' }}" placeholder="Найти статью, пост или страницу…" aria-label="Запрос">
   <button type="submit">Искать</button>
 </form>
 
@@ -16,9 +15,14 @@
     <div class="card-list">
       {% for result in search_results %}
         <article class="card">
-          <h2 class="card__title"><a href="{% pageurl result %}">{{ result }}</a></h2>
-          {% if result.search_description %}
-            <p class="muted">{{ result.search_description }}</p>
+          <h2 class="card__title"><a href="{{ result.url }}">{{ result.title }}</a></h2>
+          {% if result.kind == "blog" %}
+            <p class="muted">Блог</p>
+          {% elif result.kind == "article" %}
+            <p class="muted">Статья</p>
+          {% endif %}
+          {% if result.snippet %}
+            <p class="muted">{{ result.snippet }}</p>
           {% endif %}
         </article>
       {% endfor %}
