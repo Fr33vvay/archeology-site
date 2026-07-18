@@ -41,9 +41,19 @@ urlpatterns = [
         articles_editor_views.edit_article,
         name="article_edit",
     ),
+    path(
+        "articles/<int:page_id>/view/",
+        articles_views.record_article_view,
+        name="article_view",
+    ),
     path("blog/posts/add/", blog_views.add_post, name="blog_post_add"),
     path("blog/posts/edit/<int:post_id>/", blog_views.edit_post, name="blog_post_edit"),
     path("blog/posts/delete/<int:post_id>/", blog_views.delete_post, name="blog_post_delete"),
+    path(
+        "blog/posts/view/<int:post_id>/",
+        blog_views.record_post_view,
+        name="blog_post_view",
+    ),
     path("blog/posts/like/<int:post_id>/", blog_views.toggle_post_like, name="blog_post_like"),
     path("blog/comments/add/<int:post_id>/", blog_views.add_comment, name="blog_comment_add"),
     path(

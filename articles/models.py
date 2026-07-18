@@ -84,6 +84,7 @@ class ArticlePage(Page):
         help_text="Маленькая картинка в списках статей (на главной и в разделе «Статьи»). "
         "Внутри самой статьи не показывается — иллюстрации добавляйте в «Содержание».",
     )
+    views_count = models.PositiveIntegerField("Просмотры", default=0, editable=False)
 
     search_fields = Page.search_fields + [
         index.SearchField("intro"),
@@ -136,6 +137,32 @@ class ArticlePage(Page):
             has_unpublished = bool(latest and live_rev and latest.pk != live_rev.pk)
         context["has_unpublished_draft"] = has_unpublished
         return context
+
+
+class ArticleUniqueView(models.Model):
+    """Уникальный просмотр статьи по visitor_key (пользователь или cookie vid)."""
+
+    article = models.ForeignKey(
+        ArticlePage,
+        on_delete=models.CASCADE,
+        related_name="unique_views",
+        verbose_name="Статья",
+    )
+    visitor_key = models.CharField("Ключ посетителя", max_length=64)
+    created_at = models.DateTimeField("Создан", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Уникальный просмотр статьи"
+        verbose_name_plural = "Уникальные просмотры статей"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["article", "visitor_key"],
+                name="unique_article_visitor_view",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.visitor_key} → статья #{self.article_id}"
 
 
 class Comment(models.Model):

@@ -66,6 +66,7 @@ class BlogPost(models.Model):
     )
     body = models.TextField("Текст", max_length=5000, blank=True)
     created_at = models.DateTimeField("Создан", auto_now_add=True)
+    views_count = models.PositiveIntegerField("Просмотры", default=0, editable=False)
     is_deleted = models.BooleanField(
         "Скрыт на сайте",
         default=False,
@@ -235,6 +236,32 @@ class BlogComment(models.Model):
         if self.author.email:
             return self.author.email
         return self.author.get_username()
+
+
+class BlogPostUniqueView(models.Model):
+    """Уникальный просмотр поста блога по visitor_key (пользователь или cookie vid)."""
+
+    post = models.ForeignKey(
+        BlogPost,
+        on_delete=models.CASCADE,
+        related_name="unique_views",
+        verbose_name="Пост",
+    )
+    visitor_key = models.CharField("Ключ посетителя", max_length=64)
+    created_at = models.DateTimeField("Создан", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Уникальный просмотр поста"
+        verbose_name_plural = "Уникальные просмотры постов"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["post", "visitor_key"],
+                name="unique_blog_post_visitor_view",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.visitor_key} → пост #{self.post_id}"
 
 
 class BlogPostLike(models.Model):

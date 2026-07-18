@@ -10,9 +10,16 @@
 {% block content %}
 {% with comments_open=request.GET.comments %}
 <div class="article-with-comments{% if comments_open %} is-comments-open{% endif %}" data-article-layout>
-  <article class="article" data-article-top>
+  <article
+    class="article"
+    data-article-top
+    data-view-track
+    data-view-url="{% url 'article_view' page.pk %}"
+  >
     <p class="meta">
-      {% if page.first_published_at %}{{ page.first_published_at|date:"d E Y" }}{% endif %}
+      {% if page.first_published_at %}{{ page.first_published_at|date:"d E Y" }} · {% endif %}
+      <span data-view-count>{{ page.views_count }}</span>
+      <span data-view-label>{{ page.views_count|ru_views }}</span>
     </p>
     <h1 class="page-title">{{ page.title }}</h1>
     {% if page.intro %}<p class="lede">{{ page.intro }}</p>{% endif %}
@@ -258,10 +265,12 @@
 {% endblock %}
 
 {% block extra_js %}
+{% csrf_token %}
 <div class="comment-lightbox" data-comment-lightbox-root hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="Просмотр изображения">
   <button type="button" class="comment-lightbox__close" data-comment-lightbox-close aria-label="Закрыть">×</button>
   <img alt="" class="comment-lightbox__img" data-comment-lightbox-img>
 </div>
 <script src="{% static 'js/comments-panel.js' %}"></script>
 <script src="{% static 'js/comment-images.js' %}"></script>
+<script src="{% static 'js/unique-views.js' %}"></script>
 {% endblock %}

@@ -7,8 +7,16 @@ from django.test import TestCase, override_settings
 from PIL import Image
 from wagtail.models import Page, Site
 
-from blog.models import BlogComment, BlogCommentLike, BlogPost, BlogPostImage, BlogPostLike
+from blog.models import (
+    BlogComment,
+    BlogCommentLike,
+    BlogPost,
+    BlogPostImage,
+    BlogPostLike,
+    BlogPostUniqueView,
+)
 from home.models import HomePage
+from mysite.unique_views import VID_COOKIE, ru_views_word
 
 from blog.models import BlogIndexPage
 
@@ -307,3 +315,64 @@ class BlogLikeTests(BlogTestBase):
         self.client.post(f"/blog/posts/like/{self.post.pk}/")
         self.post.refresh_from_db()
         self.assertEqual(self.post.likes_count(), 2)
+
+
+class BlogPostUniqueViewTests(BlogTestBase):
+    def setUp(self):
+        self.post = BlogPost.objects.create(author=self.superuser, body="Пост для просмотров")
+
+    def test_guest_view_sets_cookie_and_increments_once(self):
+        """Гость получает cookie vid; повторный POST с тем же vid не увеличивает счётчик."""
+        url = f"/blog/posts/view/{self.post.pk}/"
+        first = self.client.post(url)
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.json(), {"count": 1, "created": True})
+        self.assertIn(VID_COOKIE, first.cookies)
+        vid = first.cookies[VID_COOKIE].value
+        self.assertEqual(len(vid), 32)
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.views_count, 1)
+        self.assertEqual(BlogPostUniqueView.objects.filter(post=self.post).count(), 1)
+
+        second = self.client.post(url)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(second.json(), {"count": 1, "created": False})
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.views_count, 1)
+
+    def test_different_guests_increment_separately(self):
+        """Разные visitor_key (разные cookie) увеличивают счётчик по отдельности."""
+        url = f"/blog/posts/view/{self.post.pk}/"
+        self.client.post(url)
+        self.client.cookies.clear()
+        self.client.post(url)
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.views_count, 2)
+        self.assertEqual(BlogPostUniqueView.objects.filter(post=self.post).count(), 2)
+
+    def test_logged_in_user_uses_user_key(self):
+        """Залогиненный пользователь считается по ключу u:{pk}, а не по cookie."""
+        self.client.login(username="reader", password="pass-12345")
+        url = f"/blog/posts/view/{self.post.pk}/"
+        first = self.client.post(url)
+        self.assertEqual(first.json()["created"], True)
+        view = BlogPostUniqueView.objects.get(post=self.post)
+        self.assertEqual(view.visitor_key, f"u:{self.author.pk}")
+
+        second = self.client.post(url)
+        self.assertEqual(second.json(), {"count": 1, "created": False})
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.views_count, 1)
+
+    def test_deleted_post_returns_404(self):
+        """Мягко удалённый пост недоступен для учёта просмотра."""
+        self.post.soft_delete()
+        response = self.client.post(f"/blog/posts/view/{self.post.pk}/")
+        self.assertEqual(response.status_code, 404)
+
+    def test_ru_views_word_declension(self):
+        """Проверяет русское склонение слова «просмотр»."""
+        self.assertEqual(ru_views_word(1), "просмотр")
+        self.assertEqual(ru_views_word(2), "просмотра")
+        self.assertEqual(ru_views_word(5), "просмотров")
+        self.assertEqual(ru_views_word(21), "просмотр")

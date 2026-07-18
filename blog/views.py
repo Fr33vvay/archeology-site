@@ -5,8 +5,9 @@ from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 
 from blog.forms import BlogCommentForm, BlogPostEditForm, BlogPostForm
-from blog.models import BlogComment, BlogPost, BlogCommentLike, BlogPostLike
+from blog.models import BlogComment, BlogPost, BlogCommentLike, BlogPostLike, BlogPostUniqueView
 from blog.models import BlogIndexPage
+from mysite.unique_views import record_unique_view
 
 
 def _form_error_messages(form, fallback="Не удалось выполнить действие."):
@@ -69,6 +70,17 @@ def delete_post(request, post_id):
     post.soft_delete()
     messages.success(request, "Пост удалён.")
     return _redirect_to_blog(request)
+
+
+@require_POST
+def record_post_view(request, post_id):
+    post = get_object_or_404(BlogPost, pk=post_id, is_deleted=False)
+    return record_unique_view(
+        request=request,
+        content_obj=post,
+        view_model=BlogPostUniqueView,
+        fk_field="post",
+    )
 
 
 @login_required

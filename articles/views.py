@@ -5,7 +5,8 @@ from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 
 from articles.forms import CommentEditForm, CommentForm
-from articles.models import ArticlePage, Comment
+from articles.models import ArticlePage, ArticleUniqueView, Comment
+from mysite.unique_views import record_unique_view
 
 
 def _form_error_messages(form, fallback="Не удалось отправить комментарий."):
@@ -24,6 +25,17 @@ def _redirect_to_comments(request, article, *, compose=False, posted=False):
     if posted:
         params.append("posted=1")
     return redirect(article.get_url(request) + "?" + "&".join(params))
+
+
+@require_POST
+def record_article_view(request, page_id):
+    article = get_object_or_404(ArticlePage.objects.live().public(), pk=page_id)
+    return record_unique_view(
+        request=request,
+        content_obj=article,
+        view_model=ArticleUniqueView,
+        fk_field="article",
+    )
 
 
 @login_required

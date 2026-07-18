@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static wagtailcore_tags %}
+{% load static wagtailcore_tags blog_extras %}
 
 {% block content %}
 <h1 class="page-title">{{ page.title }}</h1>
@@ -39,10 +39,19 @@
 {% if posts %}
   <div class="blog-feed">
     {% for post in posts %}
-      <article class="blog-post" id="post-{{ post.pk }}">
+      <article
+        class="blog-post"
+        id="post-{{ post.pk }}"
+        data-view-track
+        data-view-url="{% url 'blog_post_view' post.pk %}"
+      >
         <div class="comment__meta">
           <span class="comment__author">{{ post.author_label }}</span>
           <time class="comment__date" datetime="{{ post.created_at|date:'c' }}">{{ post.created_at|date:"d E Y, H:i" }}</time>
+          <span class="blog-post__views">
+            <span data-view-count>{{ post.views_count }}</span>
+            <span data-view-label>{{ post.views_count|ru_views }}</span>
+          </span>
           {% if user.is_authenticated and post.author_id == user.id or user.is_superuser %}
             <form class="comment-delete" method="post" action="{% url 'blog_post_delete' post.pk %}" onsubmit="return confirm('Удалить пост?');">
               {% csrf_token %}
@@ -132,6 +141,7 @@
 {% endblock %}
 
 {% block extra_js %}
+{% csrf_token %}
 <div class="comment-lightbox" data-comment-lightbox-root hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="Просмотр изображения">
   <button type="button" class="comment-lightbox__close" data-comment-lightbox-close aria-label="Закрыть">×</button>
   <img alt="" class="comment-lightbox__img" data-comment-lightbox-img>
@@ -139,4 +149,5 @@
 <script src="{% static 'js/comment-images.js' %}"></script>
 <script src="{% static 'js/blog-comments-toggle.js' %}"></script>
 <script src="{% static 'js/blog-likes.js' %}"></script>
+<script src="{% static 'js/unique-views.js' %}"></script>
 {% endblock %}

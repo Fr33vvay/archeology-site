@@ -10,8 +10,9 @@ from django.test import TestCase, override_settings
 from PIL import Image
 from wagtail.models import Page, Site
 
-from articles.models import ArticleIndexPage, ArticlePage, Comment, CommentImage
+from articles.models import ArticleIndexPage, ArticlePage, ArticleUniqueView, Comment, CommentImage
 from home.models import HomePage
+from mysite.unique_views import VID_COOKIE
 
 User = get_user_model()
 STATIC_JS = Path(__file__).resolve().parents[1] / "mysite" / "static" / "js"
@@ -579,3 +580,68 @@ class ArticleEditorViewTests(TestCase):
         data = response.json()
         self.assertIn("id", data)
         self.assertTrue(WagtailImage.objects.filter(pk=data["id"]).exists())
+
+
+class ArticleUniqueViewTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        root = Page.get_first_root_node()
+        home = HomePage(title="Главная", slug="home-views")
+        root.add_child(instance=home)
+        home.save_revision().publish()
+        Site.objects.update_or_create(
+            is_default_site=True,
+            defaults={"hostname": "localhost", "root_page": home, "site_name": "Test"},
+        )
+        index = ArticleIndexPage(title="Статьи", slug="articles-views")
+        home.add_child(instance=index)
+        index.save_revision().publish()
+        article = ArticlePage(title="Статья для просмотров", slug="article-views", intro="intro")
+        index.add_child(instance=article)
+        article.save_revision().publish()
+        cls.article = article
+        cls.user = User.objects.create_user(
+            username="viewer", email="viewer@yandex.ru", password="pass-12345"
+        )
+
+    def test_guest_view_sets_cookie_and_increments_once(self):
+        """Гость получает cookie vid; повторный POST не увеличивает счётчик статьи."""
+        url = f"/articles/{self.article.pk}/view/"
+        first = self.client.post(url)
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.json(), {"count": 1, "created": True})
+        self.assertIn(VID_COOKIE, first.cookies)
+        self.article.refresh_from_db()
+        self.assertEqual(self.article.views_count, 1)
+
+        second = self.client.post(url)
+        self.assertEqual(second.json(), {"count": 1, "created": False})
+        self.article.refresh_from_db()
+        self.assertEqual(self.article.views_count, 1)
+        self.assertEqual(ArticleUniqueView.objects.filter(article=self.article).count(), 1)
+
+    def test_different_guests_increment_separately(self):
+        """Разные cookie vid считаются разными посетителями статьи."""
+        url = f"/articles/{self.article.pk}/view/"
+        self.client.post(url)
+        self.client.cookies.clear()
+        self.client.post(url)
+        self.article.refresh_from_db()
+        self.assertEqual(self.article.views_count, 2)
+
+    def test_logged_in_user_uses_user_key(self):
+        """Залогиненный пользователь учитывается по ключу u:{pk}."""
+        self.client.login(username="viewer", password="pass-12345")
+        url = f"/articles/{self.article.pk}/view/"
+        response = self.client.post(url)
+        self.assertEqual(response.json()["created"], True)
+        view = ArticleUniqueView.objects.get(article=self.article)
+        self.assertEqual(view.visitor_key, f"u:{self.user.pk}")
+        again = self.client.post(url)
+        self.assertEqual(again.json(), {"count": 1, "created": False})
+
+    def test_unpublished_article_returns_404(self):
+        """Неопубликованная статья недоступна для учёта просмотра."""
+        self.article.unpublish()
+        response = self.client.post(f"/articles/{self.article.pk}/view/")
+        self.assertEqual(response.status_code, 404)
