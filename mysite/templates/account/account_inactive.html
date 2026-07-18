@@ -1,0 +1,16 @@
+{% extends "account/base_manage.html" %}
+
+{% block title %}Аккаунт неактивен{% endblock %}
+
+{% block auth_content %}
+<h1 class="page-title">Аккаунт неактивен</h1>
+<p class="lede">
+  Эта учётная запись пока отключена. Если вы только что регистрировались — откройте письмо
+  и подтвердите почту.
+</p>
+<p class="muted" style="margin-top:1.25rem;">
+  <a href="{% url 'account_login' %}">Ко входу</a>
+  ·
+  <a href="{% url 'account_signup' %}">Регистрация</a>
+</p>
+{% endblock %}

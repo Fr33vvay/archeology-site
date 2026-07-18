@@ -118,7 +118,8 @@ class ProfileAndSignupTests(TestCase):
                 },
             )
             self.assertEqual(response.status_code, 302)
-            self.assertTrue(User.objects.filter(email="verify-me@yandex.ru").exists())
+            user = User.objects.get(email="verify-me@yandex.ru")
+            self.assertFalse(user.is_active)
             self.assertEqual(len(mail.outbox), 1)
             self.assertIn("verify-me@yandex.ru", mail.outbox[0].to)
 
@@ -134,7 +135,23 @@ class ProfileAndSignupTests(TestCase):
             )
             self.assertNotIn("_auth_user_id", self.client.session)
 
-            EmailAddress.objects.filter(email="verify-me@yandex.ru").update(verified=True)
+            from allauth.account.adapter import get_adapter
+            from django.test import RequestFactory
+
+            addr = EmailAddress.objects.get(email="verify-me@yandex.ru")
+            request = RequestFactory().get("/")
+            # middleware сообщений нужен для confirm_email
+            from django.contrib.messages.storage.fallback import FallbackStorage
+            from django.contrib.sessions.backends.db import SessionStore
+
+            request.session = SessionStore()
+            request._messages = FallbackStorage(request)
+            get_adapter().confirm_email(request, addr)
+            user.refresh_from_db()
+            addr.refresh_from_db()
+            self.assertTrue(user.is_active)
+            self.assertTrue(addr.verified)
+
             login_ok = self.client.post(
                 "/accounts/login/",
                 {
@@ -144,6 +161,31 @@ class ProfileAndSignupTests(TestCase):
             )
             self.assertEqual(login_ok.status_code, 302)
             self.assertIn("_auth_user_id", self.client.session)
+
+    def test_verification_sent_page_uses_site_style(self):
+        """Страница «подтвердите почту» оформлена в стиле сайта, не дефолтом allauth."""
+        from django.test.utils import override_settings
+
+        with override_settings(
+            EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+            ACCOUNT_EMAIL_VERIFICATION="mandatory",
+        ):
+            response = self.client.post(
+                "/accounts/signup/",
+                {
+                    "email": "styled@yandex.ru",
+                    "password1": "StrongPass-12345",
+                    "password2": "StrongPass-12345",
+                    "first_name": "Стиль",
+                    "last_name": "",
+                },
+                follow=True,
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Подтвердите почту")
+        self.assertContains(response, "page-title")
+        self.assertContains(response, "auth-box")
+        self.assertNotContains(response, "allauth")
 
     def test_profile_edit(self):
         """Вошедший пользователь меняет имя и фамилию на странице профиля."""

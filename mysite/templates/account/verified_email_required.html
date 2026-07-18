@@ -1,0 +1,20 @@
+{% extends "account/base_manage.html" %}
+
+{% block title %}Нужно подтвердить почту{% endblock %}
+
+{% block auth_content %}
+<h1 class="page-title">Нужно подтвердить почту</h1>
+<p class="lede">
+  Чтобы продолжить, подтвердите адрес электронной почты — откройте письмо и перейдите по ссылке.
+</p>
+<p class="muted">
+  Если письма нет, проверьте папку «Спам». Можно
+  <a href="{% url 'account_email' %}">запросить письмо ещё раз</a>
+  после входа или зарегистрироваться заново.
+</p>
+<p class="muted" style="margin-top:1.25rem;">
+  <a href="{% url 'account_login' %}">Ко входу</a>
+  ·
+  <a href="/">На главную</a>
+</p>
+{% endblock %}

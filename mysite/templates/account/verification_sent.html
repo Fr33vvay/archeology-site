@@ -1,0 +1,18 @@
+{% extends "account/base_manage.html" %}
+
+{% block title %}Подтвердите почту{% endblock %}
+
+{% block auth_content %}
+<h1 class="page-title">Подтвердите почту</h1>
+<p class="lede">
+  Мы отправили письмо со ссылкой. Перейдите по ней, чтобы завершить регистрацию.
+</p>
+<p class="muted">
+  Если письма нет во «Входящих», загляните в «Спам». Обычно оно приходит в течение нескольких минут.
+</p>
+<p class="muted" style="margin-top:1.25rem;">
+  <a href="{% url 'account_login' %}">Ко входу</a>
+  ·
+  <a href="/">На главную</a>
+</p>
+{% endblock %}
