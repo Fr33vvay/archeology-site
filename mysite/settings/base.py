@@ -155,3 +155,13 @@ WAGTAILDOCS_EXTENSIONS = [
 ]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Получатели еженедельного отчёта (понедельник ~12:00 Europe/Moscow).
+WEEKLY_REPORT_RECIPIENTS = [
+    addr.strip()
+    for addr in os.environ.get(
+        "WEEKLY_REPORT_RECIPIENTS",
+        "7634216@gmail.com,vkoren1@rambler.ru",
+    ).split(",")
+    if addr.strip()
+]

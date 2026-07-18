@@ -327,3 +327,123 @@ class ProductionSmtpGuardTests(SimpleTestCase):
             text=True,
         )
         self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+
+
+class WeeklyReportTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from wagtail.models import Page, Site
+
+        from articles.models import ArticleIndexPage, ArticlePage
+        from home.models import HomePage
+
+        root = Page.get_first_root_node()
+        home = HomePage.objects.first()
+        if not home:
+            home = HomePage(title="Главная", slug="home-weekly")
+            root.add_child(instance=home)
+            home.save_revision().publish()
+        Site.objects.update_or_create(
+            is_default_site=True,
+            defaults={"hostname": "localhost", "root_page": home, "site_name": "Test"},
+        )
+        index = ArticleIndexPage.objects.child_of(home).first()
+        if not index:
+            index = ArticleIndexPage(title="Статьи", slug="articles-weekly")
+            home.add_child(instance=index)
+            index.save_revision().publish()
+        article = ArticlePage(title="Недельная", slug="weekly-article", intro="")
+        index.add_child(instance=article)
+        article.save_revision().publish()
+        cls.article = article
+
+    def _last_week_mid(self):
+        from datetime import timedelta
+        from zoneinfo import ZoneInfo
+
+        from django.utils import timezone
+
+        from accounts.weekly_report import previous_week_bounds
+
+        start, end = previous_week_bounds(timezone.now())
+        return start + timedelta(days=2)
+
+    def test_sends_mail_when_activity(self):
+        """При активности за прошлую неделю письмо уходит в outbox."""
+        from django.core import mail
+        from django.core.management import call_command
+        from django.test import override_settings
+        from django.utils import timezone
+
+        from articles.models import ArticleUniqueView, Comment
+
+        mid = self._last_week_mid()
+        user = User.objects.create_user(
+            username="weekly-u",
+            email="weekly-u@yandex.ru",
+            password="pass-12345",
+            first_name="Павел",
+            last_name="Иванов",
+        )
+        User.objects.filter(pk=user.pk).update(date_joined=mid)
+        view = ArticleUniqueView.objects.create(
+            article=self.article, visitor_key="vid-weekly-1"
+        )
+        ArticleUniqueView.objects.filter(pk=view.pk).update(created_at=mid)
+        comment = Comment.objects.create(
+            article=self.article, author=user, body="Комментарий недели"
+        )
+        Comment.objects.filter(pk=comment.pk).update(created_at=mid)
+
+        with override_settings(
+            EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+            WEEKLY_REPORT_RECIPIENTS=["a@example.com", "b@example.com"],
+        ):
+            call_command("send_weekly_report")
+
+        self.assertEqual(len(mail.outbox), 1)
+        body = mail.outbox[0].body
+        self.assertIn("Павел", body)
+        self.assertIn("Иванов", body)
+        self.assertNotIn("weekly-u@yandex.ru", body)
+        self.assertIn("Просмотры статей", body)
+        self.assertEqual(mail.outbox[0].to, ["a@example.com", "b@example.com"])
+
+    def test_skips_mail_when_silent(self):
+        """Если все метрики нулевые, письмо не отправляется."""
+        from django.core import mail
+        from django.core.management import call_command
+        from django.test import override_settings
+
+        with override_settings(
+            EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+            WEEKLY_REPORT_RECIPIENTS=["a@example.com"],
+        ):
+            call_command("send_weekly_report")
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_force_sends_even_when_silent(self):
+        """Флаг --force отправляет письмо даже при нулевых метриках."""
+        from django.core import mail
+        from django.core.management import call_command
+        from django.test import override_settings
+
+        with override_settings(
+            EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+            WEEKLY_REPORT_RECIPIENTS=["a@example.com"],
+        ):
+            call_command("send_weekly_report", force=True)
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_report_period_is_previous_calendar_week(self):
+        """Период отчёта — прошлая календарная неделя Europe/Moscow."""
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+
+        from accounts.weekly_report import previous_week_bounds
+
+        # Среда 15 июля 2026 MSK → прошлый пн–вс: 6–12 июля
+        now = datetime(2026, 7, 15, 12, 0, tzinfo=ZoneInfo("Europe/Moscow"))
+        start, end = previous_week_bounds(now)
+        self.assertEqual(start.date().isoformat(), "2026-07-06")
+        self.assertEqual(end.date().isoformat(), "2026-07-13")
