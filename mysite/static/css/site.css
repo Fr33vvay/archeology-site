@@ -269,17 +269,17 @@ a:hover {
 }
 
 .card__row {
-  display: flex;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: stretch;
   gap: 1rem;
 }
 
-/* Квадрат по высоте примерно: заголовок + 2 строки описания */
+/* Квадрат по фактической высоте текстового блока (заголовок + аннотация) */
 .card__cover {
-  --cover-size: calc(1.2rem * 1.3 + 0.35rem + 1em * 1.65 * 2);
-  flex: 0 0 var(--cover-size);
-  width: var(--cover-size);
-  height: var(--cover-size);
+  height: 100%;
+  width: auto;
+  aspect-ratio: 1;
   border: 1px solid var(--line);
   overflow: hidden;
   background: var(--accent-soft);
@@ -288,12 +288,12 @@ a:hover {
 .card__cover img {
   width: 100%;
   height: 100%;
+  max-width: none;
   object-fit: cover;
 }
 
 .card__body {
   min-width: 0;
-  flex: 1;
 }
 
 .card__title {
@@ -315,6 +315,7 @@ a:hover {
 
 .card__intro {
   margin: 0;
+  line-height: 1.65;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -323,8 +324,8 @@ a:hover {
 }
 
 @media (max-width: 640px) {
-  .card__cover {
-    --cover-size: calc(1.1rem * 1.3 + 0.3rem + 1em * 1.55 * 2);
+  .card__title {
+    font-size: 1.1rem;
   }
 }
 
@@ -455,11 +456,16 @@ a:hover {
   min-width: 0;
 }
 
-.folder-card a,
-.photo-card {
+.folder-card a {
   color: inherit;
   text-decoration: none;
   display: block;
+}
+
+.photo-card {
+  color: inherit;
+  display: flex;
+  flex-direction: column;
 }
 
 .folder-card__body,
@@ -1389,12 +1395,19 @@ a.footnote-back {
 }
 
 .photo-card__edit {
-  margin: 0.35rem 0 0;
+  margin: 0;
+  padding: 0.55rem 1rem;
   font-size: 0.85rem;
+  line-height: 1.3;
+  flex-shrink: 0;
 }
 
 .photo-card__edit a {
   color: var(--accent);
+}
+
+.photo-card__edit + figcaption {
+  padding-top: 0;
 }
 
 .home-feed {

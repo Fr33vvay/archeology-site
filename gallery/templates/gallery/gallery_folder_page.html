@@ -22,12 +22,12 @@
             {% image photo.image fill-1200x900 as thumb %}
             <img src="{{ thumb.url }}" alt="{{ photo.caption|default:photo.image.title }}">
           </a>
-          {% if photo.caption %}<figcaption>{{ photo.caption }}</figcaption>{% endif %}
           {% if user.is_superuser %}
             <p class="photo-card__edit">
               <a href="{% url 'gallery_photo_edit' photo.pk %}">Изменить подпись</a>
             </p>
           {% endif %}
+          {% if photo.caption %}<figcaption>{{ photo.caption }}</figcaption>{% endif %}
         </figure>
       {% endfor %}
     </div>

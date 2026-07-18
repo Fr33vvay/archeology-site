@@ -104,3 +104,20 @@ class GalleryCaptionEditTests(TestCase):
         response = self.client.get(self.folder.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Видимая подпись")
+
+    def test_edit_link_renders_before_caption_for_superuser(self):
+        """У суперпользователя кнопка правки идёт сразу после картинки, до подписи."""
+        self.client.login(username="gal-admin", password="pass-12345")
+        response = self.client.get(self.folder.url)
+        html = response.content.decode()
+        edit_pos = html.find('class="photo-card__edit"')
+        caption_pos = html.find("<figcaption>")
+        self.assertNotEqual(edit_pos, -1)
+        self.assertNotEqual(caption_pos, -1)
+        self.assertLess(edit_pos, caption_pos)
+
+    def test_edit_link_hidden_for_regular_user(self):
+        """Обычному пользователю кнопка правки подписи не показывается."""
+        self.client.login(username="gal-user", password="pass-12345")
+        response = self.client.get(self.folder.url)
+        self.assertNotContains(response, "Изменить подпись")
