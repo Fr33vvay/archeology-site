@@ -27,51 +27,62 @@
     data-upload-url="{% url 'article_upload_image' %}"
   >
     {% csrf_token %}
-    <label class="auth-label">
-      <span>Название *</span>
-      <input type="text" name="title" value="{{ article.title }}" required maxlength="255">
-    </label>
-    <label class="auth-label">
-      <span>Краткое описание</span>
-      <textarea name="intro" rows="2" maxlength="500">{{ article.intro }}</textarea>
-    </label>
+    <div class="article-editor__layout">
+      <div class="article-editor__main">
+        <label class="auth-label">
+          <span>Название *</span>
+          <input type="text" name="title" value="{{ article.title }}" required maxlength="255">
+        </label>
+        <label class="auth-label">
+          <span>Краткое описание</span>
+          <textarea name="intro" rows="2" maxlength="500">{{ article.intro }}</textarea>
+        </label>
 
-    <div class="article-editor__cover" data-cover>
-      <span class="auth-label"><span>Обложка (для списков)</span></span>
-      <input type="hidden" name="cover_id" value="{% if article.cover_id %}{{ article.cover_id }}{% endif %}" data-cover-id>
-      {% if article.cover %}
-        <img src="{{ article.cover.file.url }}" alt="" class="article-editor__cover-preview" data-cover-preview>
-      {% else %}
-        <img src="" alt="" class="article-editor__cover-preview" data-cover-preview hidden>
-      {% endif %}
-      <div class="article-editor__row">
-        <input type="file" accept="image/*" data-cover-file>
-        <label class="article-editor__check"><input type="checkbox" name="clear_cover" value="1"> Убрать обложку</label>
+        <div class="article-editor__cover" data-cover>
+          <span class="auth-label"><span>Обложка (для списков)</span></span>
+          <input type="hidden" name="cover_id" value="{% if article.cover_id %}{{ article.cover_id }}{% endif %}" data-cover-id>
+          {% if article.cover %}
+            <img src="{{ article.cover.file.url }}" alt="" class="article-editor__cover-preview" data-cover-preview>
+          {% else %}
+            <img src="" alt="" class="article-editor__cover-preview" data-cover-preview hidden>
+          {% endif %}
+          <div class="article-editor__row">
+            <input type="file" accept="image/*" data-cover-file>
+            <label class="article-editor__check"><input type="checkbox" name="clear_cover" value="1"> Убрать обложку</label>
+          </div>
+        </div>
+
+        <h2 class="section-title">Содержание</h2>
+        <p class="muted">Текст набирайте как в Word: выделите фрагмент и нажмите кнопку на панели над полем. Картинки — отдельным блоком.</p>
+
+        <div class="article-editor__blocks" data-blocks></div>
+        <input type="hidden" name="blocks_json" value="" data-blocks-json>
       </div>
-    </div>
 
-    <h2 class="section-title">Содержание</h2>
-    <p class="muted">Блоки как в админке: абзац, заголовок, цитата, иллюстрация, галерея. Иллюстрация — отдельный блок между абзацами.</p>
-
-    <div class="article-editor__blocks" data-blocks></div>
-    <input type="hidden" name="blocks_json" value="" data-blocks-json>
-
-    <div class="article-editor__add">
-      <button type="button" class="button" data-add="paragraph">+ Абзац</button>
-      <button type="button" class="button" data-add="heading">+ Заголовок</button>
-      <button type="button" class="button" data-add="quote">+ Цитата</button>
-      <button type="button" class="button" data-add="image">+ Иллюстрация</button>
-      <button type="button" class="button" data-add="gallery">+ Галерея</button>
-    </div>
-
-    <div class="article-editor__actions">
-      <button class="button" type="submit" name="action" value="draft">Сохранить черновик</button>
-      <button class="button" type="submit" name="action" value="publish">Опубликовать</button>
-      {% if not is_new and article.url %}
-        <a class="button" href="{{ article.url }}">К статье</a>
-      {% else %}
-        <a class="button" href="/articles/">К списку</a>
-      {% endif %}
+      <aside class="article-editor__sidebar" aria-label="Действия редактора">
+        <div class="article-editor__sidebar-section">
+          <p class="article-editor__sidebar-title">Добавить блок</p>
+          <div class="article-editor__add">
+            <button type="button" class="button" data-add="paragraph">+ Абзац</button>
+            <button type="button" class="button" data-add="heading">+ Заголовок</button>
+            <button type="button" class="button" data-add="quote">+ Цитата</button>
+            <button type="button" class="button" data-add="image">+ Иллюстрация</button>
+            <button type="button" class="button" data-add="gallery">+ Галерея</button>
+          </div>
+        </div>
+        <div class="article-editor__sidebar-section">
+          <p class="article-editor__sidebar-title">Сохранить</p>
+          <div class="article-editor__actions">
+            <button class="button" type="submit" name="action" value="draft">Сохранить черновик</button>
+            <button class="button" type="submit" name="action" value="publish">Опубликовать</button>
+            {% if not is_new and article.url %}
+              <a class="button" href="{{ article.url }}">Отмена</a>
+            {% else %}
+              <a class="button" href="/articles/">Отмена</a>
+            {% endif %}
+          </div>
+        </div>
+      </aside>
     </div>
   </form>
 </article>

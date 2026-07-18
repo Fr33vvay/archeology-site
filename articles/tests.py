@@ -471,6 +471,22 @@ class ArticleEditorViewTests(TestCase):
         self.assertIn("Новая статья", index_html)
         self.assertIn("/articles/new/", index_html)
 
+    def test_editor_page_has_sidebar_and_rich_text(self):
+        """У редактора боковая панель действий и визуальный набор текста."""
+        self.client.login(username="editor-admin", password="pass-12345")
+        response = self.client.get(f"/articles/{self.article.pk}/edit/")
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn("article-editor__sidebar", html)
+        self.assertIn("Сохранить черновик", html)
+        self.assertIn("Отмена", html)
+        source = (STATIC_JS / "article-editor.js").read_text(encoding="utf-8")
+        self.assertIn("contenteditable", source)
+        self.assertIn('data-cmd="bold"', source)
+        self.assertIn('data-cmd="italic"', source)
+        self.assertIn('data-cmd="underline"', source)
+        self.assertIn("Точно удалить этот блок?", source)
+
     def test_draft_does_not_change_live_html(self):
         """Черновик сохраняется, но live-страница остаётся прежней."""
         self.client.login(username="editor-admin", password="pass-12345")

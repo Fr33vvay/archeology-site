@@ -29,6 +29,76 @@
     );
   }
 
+  function isEmptyHtml(html) {
+    var tmp = document.createElement("div");
+    tmp.innerHTML = html || "";
+    return !(tmp.textContent || "").trim();
+  }
+
+  function normalizeEditorHtml(html) {
+    if (!html || isEmptyHtml(html)) return "";
+    var tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    tmp.querySelectorAll("script,style").forEach(function (node) {
+      node.remove();
+    });
+    return tmp.innerHTML.trim();
+  }
+
+  function runCommand(cmd, value) {
+    try {
+      document.execCommand(cmd, false, value);
+    } catch (e) {
+      /* старые браузеры */
+    }
+  }
+
+  function makeRichText(initialHtml) {
+    var wrap = document.createElement("div");
+    wrap.className = "article-rte";
+    wrap.innerHTML =
+      '<div class="article-rte__toolbar" role="toolbar" aria-label="Форматирование текста">' +
+      '<button type="button" data-cmd="bold" title="Жирный"><b>Ж</b></button>' +
+      '<button type="button" data-cmd="italic" title="Курсив"><i>К</i></button>' +
+      '<button type="button" data-cmd="underline" title="Подчёркивание"><u>Ч</u></button>' +
+      '<span class="article-rte__sep" aria-hidden="true"></span>' +
+      '<button type="button" data-cmd="insertUnorderedList" title="Маркированный список">• Список</button>' +
+      '<button type="button" data-cmd="insertOrderedList" title="Нумерованный список">1. Список</button>' +
+      '<span class="article-rte__sep" aria-hidden="true"></span>' +
+      '<button type="button" data-cmd="createLink" title="Ссылка">Ссылка</button>' +
+      '<button type="button" data-cmd="superscript" title="Верхний индекс">x²</button>' +
+      '<button type="button" data-cmd="subscript" title="Нижний индекс">x₂</button>' +
+      '<span class="article-rte__sep" aria-hidden="true"></span>' +
+      '<button type="button" data-cmd="undo" title="Отменить">↩</button>' +
+      '<button type="button" data-cmd="redo" title="Повторить">↪</button>' +
+      "</div>" +
+      '<div class="article-rte__editor" contenteditable="true" data-field="value" role="textbox" aria-multiline="true"></div>';
+
+    var editor = wrap.querySelector(".article-rte__editor");
+    editor.innerHTML = initialHtml || "<p><br></p>";
+
+    wrap.querySelector(".article-rte__toolbar").addEventListener("mousedown", function (ev) {
+      // Не снимаем выделение в тексте при клике по кнопке
+      if (ev.target.closest("button")) ev.preventDefault();
+    });
+
+    wrap.querySelector(".article-rte__toolbar").addEventListener("click", function (ev) {
+      var btn = ev.target.closest("[data-cmd]");
+      if (!btn) return;
+      editor.focus();
+      var cmd = btn.getAttribute("data-cmd");
+      if (cmd === "createLink") {
+        var url = window.prompt("Адрес ссылки (https://…)", "https://");
+        if (!url) return;
+        runCommand("createLink", url);
+        return;
+      }
+      runCommand(cmd);
+    });
+
+    return wrap;
+  }
+
   function blockShell(type, title) {
     var el = document.createElement("div");
     el.className = "article-editor__block";
@@ -50,10 +120,7 @@
   function addParagraph(value) {
     var el = blockShell("paragraph", "Абзац");
     var body = el.querySelector(".article-editor__block-body");
-    body.innerHTML =
-      '<label class="auth-label"><span>Текст (можно HTML)</span>' +
-      '<textarea rows="6" data-field="value"></textarea></label>';
-    body.querySelector("[data-field=value]").value = value || "";
+    body.appendChild(makeRichText(value || ""));
     blocksRoot.appendChild(el);
   }
 
@@ -159,6 +226,7 @@
           });
       });
       row.querySelector("[data-gallery-remove]").addEventListener("click", function () {
+        if (!window.confirm("Удалить это фото из галереи?")) return;
         row.remove();
       });
       list.appendChild(row);
@@ -194,7 +262,9 @@
     var remove = ev.target.closest("[data-remove]");
     if (remove) {
       var block = remove.closest(".article-editor__block");
-      if (block) block.remove();
+      if (!block) return;
+      if (!window.confirm("Точно удалить этот блок?")) return;
+      block.remove();
       return;
     }
     var move = ev.target.closest("[data-move]");
@@ -228,12 +298,21 @@
     });
   }
 
+  function fieldValue(el) {
+    var field = el.querySelector("[data-field=value]");
+    if (!field) return "";
+    if (field.isContentEditable || field.getAttribute("contenteditable") === "true") {
+      return normalizeEditorHtml(field.innerHTML);
+    }
+    return field.value || "";
+  }
+
   function collectBlocks() {
     var blocks = [];
     blocksRoot.querySelectorAll(".article-editor__block").forEach(function (el) {
       var type = el.dataset.type;
       if (type === "paragraph" || type === "heading" || type === "quote") {
-        var val = (el.querySelector("[data-field=value]") || {}).value || "";
+        var val = fieldValue(el);
         if (String(val).trim()) blocks.push({ type: type, value: val });
         return;
       }
