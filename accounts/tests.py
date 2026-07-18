@@ -72,6 +72,31 @@ class ProfileAndSignupTests(TestCase):
         self.assertEqual(user.first_name, "Иван")
         self.assertEqual(user.last_name, "")
 
+    def test_signup_succeeds_without_smtp(self):
+        """Регистрация завершается редиректом даже без рабочего SMTP."""
+        from django.core import mail
+        from django.test.utils import override_settings
+
+        with override_settings(
+            EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend",
+            EMAIL_HOST="127.0.0.1",
+            EMAIL_PORT=9,
+            ACCOUNT_EMAIL_VERIFICATION="none",
+        ):
+            response = self.client.post(
+                "/accounts/signup/",
+                {
+                    "email": "nosmtp@yandex.ru",
+                    "password1": "StrongPass-12345",
+                    "password2": "StrongPass-12345",
+                    "first_name": "Без",
+                    "last_name": "Почты",
+                },
+            )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(User.objects.filter(email="nosmtp@yandex.ru").exists())
+        self.assertEqual(len(mail.outbox), 0)
+
     def test_profile_edit(self):
         """Вошедший пользователь меняет имя и фамилию на странице профиля."""
         user = User.objects.create_user(

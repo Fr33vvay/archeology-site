@@ -1,7 +1,11 @@
+import logging
+
 from allauth.account.adapter import DefaultAccountAdapter
 from django import forms
 
 from accounts.email_domains import is_russian_email
+
+logger = logging.getLogger(__name__)
 
 
 class AccountAdapter(DefaultAccountAdapter):
@@ -13,3 +17,11 @@ class AccountAdapter(DefaultAccountAdapter):
                 "(например Yandex, Mail.ru, Rambler) или адреса в зоне .ru."
             )
         return email
+
+    def send_mail(self, template_prefix, email, context):
+        """Не роняем регистрацию, если почтовый сервер недоступен."""
+        try:
+            return super().send_mail(template_prefix, email, context)
+        except OSError:
+            logger.exception("Не удалось отправить письмо на %s", email)
+            return None

@@ -31,6 +31,12 @@ DATABASES = {
 
 WAGTAILADMIN_BASE_URL = os.environ.get("WAGTAILADMIN_BASE_URL", "http://localhost")
 
+# Нет локального SMTP на ВМ — не пытаемся слать почту через localhost:25.
+EMAIL_BACKEND = os.environ.get(
+    "DJANGO_EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend",
+)
+
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # После включения HTTPS на домене: DJANGO_COOKIE_SECURE=1 в .env

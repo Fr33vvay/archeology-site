@@ -99,7 +99,8 @@ ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_FORMS = {
     "signup": "accounts.forms.CustomSignupForm",
 }
-ACCOUNT_EMAIL_VERIFICATION = "optional"
+# Пока на сервере нет SMTP: не шлём письмо подтверждения (иначе signup → 500).
+ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_LOGOUT_ON_GET = False
 LOGIN_REDIRECT_URL = "/"
