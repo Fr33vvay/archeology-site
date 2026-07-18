@@ -261,6 +261,43 @@ class ProfileAndSignupTests(TestCase):
             self.assertTrue(addr.verified)
             self.assertGreaterEqual(len(mail.outbox), 1)
 
+    def test_confirmation_email_mentions_site_not_admin(self):
+        """В письме подтверждения — коренцвит.рф, без admin и example.com."""
+        from django.contrib.sites.models import Site
+        from django.core import mail
+        from django.test.utils import override_settings
+
+        Site.objects.update_or_create(
+            id=1,
+            defaults={"domain": "коренцвит.рф", "name": "коренцвит.рф"},
+        )
+        with override_settings(
+            EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+            ACCOUNT_EMAIL_VERIFICATION="mandatory",
+            ACCOUNT_CONFIRM_EMAIL_ON_GET=False,
+        ):
+            response = self.client.post(
+                "/accounts/signup/",
+                {
+                    "email": "mail-check@yandex.ru",
+                    "password1": "StrongPass-12345",
+                    "password2": "StrongPass-12345",
+                    "first_name": "Почта",
+                    "last_name": "",
+                },
+            )
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(len(mail.outbox), 1)
+            subject = mail.outbox[0].subject
+            body = mail.outbox[0].body
+            self.assertIn("коренцвит.рф", subject)
+            self.assertIn("коренцвит.рф", body)
+            self.assertIn("Подтвердить", body)
+            self.assertNotIn("example.com", subject)
+            self.assertNotIn("example.com", body)
+            self.assertNotIn("admin", body.lower())
+            self.assertNotIn("xn--", body)
+
 
 class ProductionSmtpGuardTests(SimpleTestCase):
     def test_production_settings_require_smtp(self):

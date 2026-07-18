@@ -81,6 +81,11 @@ class AccountAdapter(DefaultAccountAdapter):
                 user.save(update_fields=["is_active"])
         return ok
 
+    def get_email_confirmation_url(self, request, emailconfirmation):
+        """В письме показываем человекочитаемый домен вместо punycode."""
+        url = super().get_email_confirmation_url(request, emailconfirmation)
+        return url.replace("xn--b1afkfqeou7a.xn--p1ai", "коренцвит.рф")
+
     def send_mail(self, template_prefix, email, context):
         """Не роняем регистрацию, если почтовый сервер недоступен."""
         try:

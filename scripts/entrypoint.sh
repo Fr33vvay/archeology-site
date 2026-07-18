@@ -2,6 +2,7 @@
 set -e
 
 python manage.py migrate --noinput
+python manage.py ensure_site
 python manage.py collectstatic --noinput
 
 if [ "${LOAD_DEMO:-0}" = "1" ]; then
