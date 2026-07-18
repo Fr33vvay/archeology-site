@@ -30,8 +30,12 @@ COPY --chown=wagtail:wagtail . .
 
 USER wagtail
 
+# Заглушки SMTP только для collectstatic на этапе сборки образа;
+# на рантайме реальные EMAIL_* приходят из .env (без них production не стартует).
 RUN DJANGO_SECRET_KEY=build-only \
     POSTGRES_HOST=localhost \
+    EMAIL_HOST_USER=build \
+    EMAIL_HOST_PASSWORD=build \
     python manage.py collectstatic --noinput --clear
 
 ENTRYPOINT ["/app/scripts/entrypoint.sh"]
