@@ -269,17 +269,18 @@ a:hover {
 }
 
 .card__row {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: stretch;
+  display: flex;
+  align-items: flex-start;
   gap: 1rem;
 }
 
-/* Квадрат по фактической высоте текстового блока (заголовок + аннотация) */
+/* Квадрат ≈ заголовок + 2 строки описания, +20% к прежней высоте */
 .card__cover {
-  height: 100%;
-  width: auto;
-  aspect-ratio: 1;
+  --cover-size: calc((1.2rem * 1.3 + 0.35rem + 1em * 1.65 * 2) * 1.2);
+  flex: 0 0 var(--cover-size);
+  width: var(--cover-size);
+  height: var(--cover-size);
+  max-width: 100%;
   border: 1px solid var(--line);
   overflow: hidden;
   background: var(--accent-soft);
@@ -288,12 +289,12 @@ a:hover {
 .card__cover img {
   width: 100%;
   height: 100%;
-  max-width: none;
   object-fit: cover;
 }
 
 .card__body {
   min-width: 0;
+  flex: 1;
 }
 
 .card__title {
@@ -326,6 +327,10 @@ a:hover {
 @media (max-width: 640px) {
   .card__title {
     font-size: 1.1rem;
+  }
+
+  .card__cover {
+    --cover-size: calc((1.1rem * 1.3 + 0.3rem + 1em * 1.55 * 2) * 1.2);
   }
 }
 
