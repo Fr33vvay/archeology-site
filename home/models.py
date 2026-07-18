@@ -1,11 +1,38 @@
 from django.db import models
 
 from wagtail.admin.panels import FieldPanel, MultiFieldPanel
+from wagtail.contrib.settings.models import BaseSiteSetting, register_setting
 from wagtail.fields import RichTextField
 from wagtail.models import Page
 
 from articles.models import ArticlePage
 from blog.models import BlogIndexPage, BlogPost
+
+
+@register_setting(icon="home")
+class SiteBranding(BaseSiteSetting):
+    """Тексты шапки и подвала — правятся в админке Wagtail → Настройки."""
+
+    header_title = models.CharField(
+        "Текст в шапке (чердак)",
+        max_length=120,
+        default="Научный архив",
+        help_text="Название слева вверху, рядом с меню",
+    )
+    footer_text = models.CharField(
+        "Текст в подвале",
+        max_length=255,
+        default="Научные материалы и иллюстрации. Сайт-архив.",
+        help_text="Строка внизу каждой страницы",
+    )
+
+    panels = [
+        FieldPanel("header_title"),
+        FieldPanel("footer_text"),
+    ]
+
+    class Meta:
+        verbose_name = "Шапка и подвал"
 
 
 class HomePage(Page):
