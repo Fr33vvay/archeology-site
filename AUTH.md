@@ -13,7 +13,8 @@
 RUSSIAN_EMAIL_DOMAINS=example.ru,myuni.ru
 ```
 
-Подтверждение письма сейчас **необязательное** (SMTP не настроен). Для обязательного подтверждения позже понадобится почтовый сервер и `ACCOUNT_EMAIL_VERIFICATION=mandatory`.
+На проде: письмо подтверждения **обязательно** (`ACCOUNT_EMAIL_VERIFICATION=mandatory`).  
+SMTP — Gmail (`EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` в `.env`). Пока учётка не задана, сайт откатывается к console backend и без проверки (чтобы не ломать signup).
 
 ## Редакторы сайта
 

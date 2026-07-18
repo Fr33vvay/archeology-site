@@ -31,11 +31,31 @@ DATABASES = {
 
 WAGTAILADMIN_BASE_URL = os.environ.get("WAGTAILADMIN_BASE_URL", "http://localhost")
 
-# Нет локального SMTP на ВМ — не пытаемся слать почту через localhost:25.
+# SMTP (Gmail): EMAIL_HOST_USER / EMAIL_HOST_PASSWORD в .env на ВМ.
 EMAIL_BACKEND = os.environ.get(
     "DJANGO_EMAIL_BACKEND",
-    "django.core.mail.backends.console.EmailBackend",
+    "django.core.mail.backends.smtp.EmailBackend",
 )
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "1") == "1"
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "DEFAULT_FROM_EMAIL",
+    EMAIL_HOST_USER or "noreply@localhost",
+)
+SERVER_EMAIL = os.environ.get("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
+EMAIL_SUBJECT_PREFIX = os.environ.get("EMAIL_SUBJECT_PREFIX", "[коренцвит.рф] ")
+
+# Без рабочего SMTP регистрация с mandatory снова даст 500 — включаем только при наличии учётки.
+if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
+    ACCOUNT_EMAIL_VERIFICATION = os.environ.get(
+        "ACCOUNT_EMAIL_VERIFICATION", "mandatory"
+    )
+else:
+    ACCOUNT_EMAIL_VERIFICATION = "none"
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 

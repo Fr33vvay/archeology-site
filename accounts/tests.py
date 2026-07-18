@@ -73,7 +73,7 @@ class ProfileAndSignupTests(TestCase):
         self.assertEqual(user.last_name, "")
 
     def test_signup_succeeds_without_smtp(self):
-        """Регистрация завершается редиректом даже без рабочего SMTP."""
+        """При verification=none регистрация не падает даже без рабочего SMTP."""
         from django.core import mail
         from django.test.utils import override_settings
 
@@ -96,6 +96,54 @@ class ProfileAndSignupTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(User.objects.filter(email="nosmtp@yandex.ru").exists())
         self.assertEqual(len(mail.outbox), 0)
+
+    def test_mandatory_verification_sends_email_and_blocks_login(self):
+        """При mandatory уходит письмо, войти нельзя, пока email не подтверждён."""
+        from allauth.account.models import EmailAddress
+        from django.core import mail
+        from django.test.utils import override_settings
+
+        with override_settings(
+            EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+            ACCOUNT_EMAIL_VERIFICATION="mandatory",
+        ):
+            response = self.client.post(
+                "/accounts/signup/",
+                {
+                    "email": "verify-me@yandex.ru",
+                    "password1": "StrongPass-12345",
+                    "password2": "StrongPass-12345",
+                    "first_name": "Проверка",
+                    "last_name": "",
+                },
+            )
+            self.assertEqual(response.status_code, 302)
+            self.assertTrue(User.objects.filter(email="verify-me@yandex.ru").exists())
+            self.assertEqual(len(mail.outbox), 1)
+            self.assertIn("verify-me@yandex.ru", mail.outbox[0].to)
+
+            self.assertFalse(
+                EmailAddress.objects.get(email="verify-me@yandex.ru").verified
+            )
+            self.client.post(
+                "/accounts/login/",
+                {
+                    "login": "verify-me@yandex.ru",
+                    "password": "StrongPass-12345",
+                },
+            )
+            self.assertNotIn("_auth_user_id", self.client.session)
+
+            EmailAddress.objects.filter(email="verify-me@yandex.ru").update(verified=True)
+            login_ok = self.client.post(
+                "/accounts/login/",
+                {
+                    "login": "verify-me@yandex.ru",
+                    "password": "StrongPass-12345",
+                },
+            )
+            self.assertEqual(login_ok.status_code, 302)
+            self.assertIn("_auth_user_id", self.client.session)
 
     def test_profile_edit(self):
         """Вошедший пользователь меняет имя и фамилию на странице профиля."""
