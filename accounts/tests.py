@@ -26,6 +26,22 @@ class RussianEmailTests(SimpleTestCase):
 
 
 class ProfileAndSignupTests(TestCase):
+    def test_signup_rejects_foreign_email(self):
+        """Регистрация с нероссийской почтой отклоняется на форме."""
+        response = self.client.post(
+            "/accounts/signup/",
+            {
+                "email": "user@gmail.com",
+                "password1": "StrongPass-12345",
+                "password2": "StrongPass-12345",
+                "first_name": "Иван",
+                "last_name": "",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "российской почты")
+        self.assertEqual(User.objects.filter(email="user@gmail.com").count(), 0)
+
     def test_signup_requires_first_name(self):
         """При регистрации имя обязательно, фамилия — нет."""
         response = self.client.post(

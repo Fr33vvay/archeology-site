@@ -119,9 +119,11 @@ a:hover {
 
 .nav__icon {
   display: none;
-  width: 1.55rem;
-  height: 1.55rem;
+  width: 1.4rem;
+  height: 1.4rem;
   flex-shrink: 0;
+  /* Одинаковая «коробка» у всех SVG, как у домика */
+  overflow: hidden;
 }
 
 @media (max-width: 820px) {
