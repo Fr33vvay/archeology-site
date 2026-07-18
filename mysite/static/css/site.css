@@ -1388,6 +1388,15 @@ a.footnote-back {
   transform: translateX(-50%) translateY(0);
 }
 
+.photo-card__edit {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+}
+
+.photo-card__edit a {
+  color: var(--accent);
+}
+
 .home-feed {
   display: grid;
   grid-template-columns: 1fr;

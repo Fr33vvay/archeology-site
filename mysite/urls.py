@@ -10,6 +10,7 @@ from accounts import views as accounts_views
 from articles import editor_views as articles_editor_views
 from articles import views as articles_views
 from blog import views as blog_views
+from gallery import views as gallery_views
 from search import views as search_views
 
 urlpatterns = [
@@ -55,6 +56,11 @@ urlpatterns = [
         "articles/favorites/<int:fav_id>/remove/",
         articles_views.remove_favorite,
         name="article_favorite_remove",
+    ),
+    path(
+        "gallery/photos/<int:photo_id>/edit/",
+        gallery_views.edit_photo_caption,
+        name="gallery_photo_edit",
     ),
     path("blog/posts/add/", blog_views.add_post, name="blog_post_add"),
     path("blog/posts/edit/<int:post_id>/", blog_views.edit_post, name="blog_post_edit"),

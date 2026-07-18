@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load wagtailimages_tags %}
+
+{% block title %}Подпись фото{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Подпись фото</h1>
+<p class="muted"><a href="{{ folder.url }}">← {{ folder.title }}</a></p>
+
+<figure class="photo-card" style="max-width: 28rem; margin: 1rem 0;">
+  {% image photo.image width-600 as img %}
+  <img src="{{ img.url }}" alt="{{ photo.caption|default:photo.image.title }}">
+</figure>
+
+<form class="auth-form" method="post" action="{% url 'gallery_photo_edit' photo.pk %}">
+  {% csrf_token %}
+  <label class="auth-label">
+    <span>Подпись</span>
+    <input type="text" name="caption" value="{{ photo.caption }}" maxlength="255">
+  </label>
+  <button class="button" type="submit">Сохранить</button>
+</form>
+{% endblock %}
