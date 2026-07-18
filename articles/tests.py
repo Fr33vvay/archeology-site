@@ -485,6 +485,8 @@ class ArticleEditorViewTests(TestCase):
         self.assertIn('data-cmd="bold"', source)
         self.assertIn('data-cmd="italic"', source)
         self.assertIn('data-cmd="underline"', source)
+        self.assertIn('data-cmd="insertFootnote"', source)
+        self.assertIn("Текст сноски", source)
         self.assertIn("Точно удалить этот блок?", source)
 
     def test_draft_does_not_change_live_html(self):

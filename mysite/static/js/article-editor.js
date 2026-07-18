@@ -53,6 +53,104 @@
     }
   }
 
+  function escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function nextFootnoteNumber() {
+    var max = 0;
+    var re = /#fn(?:ref)?-(\d+)/g;
+    blocksRoot.querySelectorAll(".article-rte__editor").forEach(function (editor) {
+      var html = editor.innerHTML || "";
+      var match;
+      while ((match = re.exec(html))) {
+        max = Math.max(max, Number(match[1]));
+      }
+    });
+    return max + 1;
+  }
+
+  function insertHtmlAtCursor(editor, html) {
+    editor.focus();
+    var sel = window.getSelection();
+    if (!sel || !sel.rangeCount || !editor.contains(sel.anchorNode)) {
+      editor.appendChild(document.createTextNode(""));
+      var range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    var ok = false;
+    try {
+      ok = document.execCommand("insertHTML", false, html);
+    } catch (e) {
+      ok = false;
+    }
+    if (!ok) {
+      var range2 = window.getSelection().getRangeAt(0);
+      range2.deleteContents();
+      var tmp = document.createElement("div");
+      tmp.innerHTML = html;
+      var frag = document.createDocumentFragment();
+      var node;
+      while ((node = tmp.firstChild)) frag.appendChild(node);
+      range2.insertNode(frag);
+    }
+  }
+
+  function findFootnotesOl() {
+    var editors = blocksRoot.querySelectorAll(".article-rte__editor");
+    for (var i = 0; i < editors.length; i++) {
+      var ols = editors[i].querySelectorAll("ol");
+      for (var j = 0; j < ols.length; j++) {
+        if ((ols[j].innerHTML || "").indexOf("#fnref-") !== -1) {
+          return { editor: editors[i], ol: ols[j] };
+        }
+      }
+    }
+    return null;
+  }
+
+  function appendFootnoteItem(n, noteText) {
+    var liHtml =
+      "<li>" + escapeHtml(noteText) + ' <a href="#fnref-' + n + '">↩</a></li>';
+    var found = findFootnotesOl();
+    if (found) {
+      found.ol.insertAdjacentHTML("beforeend", liHtml);
+      return;
+    }
+    addParagraph("<ol>" + liHtml + "</ol>");
+  }
+
+  function insertFootnote(editor) {
+    var saved = null;
+    var sel = window.getSelection();
+    if (sel && sel.rangeCount && editor.contains(sel.anchorNode)) {
+      saved = sel.getRangeAt(0).cloneRange();
+    }
+    var note = window.prompt("Текст сноски:", "");
+    if (note === null || !String(note).trim()) return;
+    note = String(note).trim();
+    var n = nextFootnoteNumber();
+    editor.focus();
+    if (saved) {
+      sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(saved);
+    }
+    insertHtmlAtCursor(
+      editor,
+      '<a href="#fn-' + n + '"><sup>' + n + "</sup></a>"
+    );
+    appendFootnoteItem(n, note);
+  }
+
   function makeRichText(initialHtml) {
     var wrap = document.createElement("div");
     wrap.className = "article-rte";
@@ -66,6 +164,7 @@
       '<button type="button" data-cmd="insertOrderedList" title="Нумерованный список">1. Список</button>' +
       '<span class="article-rte__sep" aria-hidden="true"></span>' +
       '<button type="button" data-cmd="createLink" title="Ссылка">Ссылка</button>' +
+      '<button type="button" data-cmd="insertFootnote" title="Сноска">Сноска</button>' +
       '<button type="button" data-cmd="superscript" title="Верхний индекс">x²</button>' +
       '<button type="button" data-cmd="subscript" title="Нижний индекс">x₂</button>' +
       '<span class="article-rte__sep" aria-hidden="true"></span>' +
@@ -91,6 +190,10 @@
         var url = window.prompt("Адрес ссылки (https://…)", "https://");
         if (!url) return;
         runCommand("createLink", url);
+        return;
+      }
+      if (cmd === "insertFootnote") {
+        insertFootnote(editor);
         return;
       }
       runCommand(cmd);
