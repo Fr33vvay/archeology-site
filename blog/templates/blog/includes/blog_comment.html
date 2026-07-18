@@ -18,7 +18,7 @@
         <form class="like-form" method="post" action="{% url 'blog_comment_like' comment.pk %}">
           {% csrf_token %}
           <button type="submit" class="like-button{% if comment.is_liked %} is-active{% endif %}" aria-pressed="{% if comment.is_liked %}true{% else %}false{% endif %}" aria-label="Нравится">
-            <span aria-hidden="true">♥</span> <span>{{ comment.likes_count }}</span>
+            <span aria-hidden="true">♥</span> <span data-like-count>{{ comment.likes_count }}</span>
           </button>
         </form>
       {% else %}

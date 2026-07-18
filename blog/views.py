@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 
@@ -20,6 +20,10 @@ def _redirect_to_blog(request, anchor=None):
     if anchor:
         url = f"{url}#{anchor}"
     return redirect(url)
+
+
+def _wants_json(request) -> bool:
+    return request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
 
 @login_required
@@ -74,6 +78,9 @@ def toggle_post_like(request, post_id):
     like, created = BlogPostLike.objects.get_or_create(post=post, user=request.user)
     if not created:
         like.delete()
+    liked = created
+    if _wants_json(request):
+        return JsonResponse({"liked": liked, "count": post.likes_count()})
     return _redirect_to_blog(request, anchor=f"post-{post.pk}")
 
 
@@ -129,4 +136,7 @@ def toggle_comment_like(request, comment_id):
     like, created = BlogCommentLike.objects.get_or_create(comment=comment, user=request.user)
     if not created:
         like.delete()
-    return _redirect_to_blog(request, anchor=f"post-{comment.post_id}")
+    liked = created
+    if _wants_json(request):
+        return JsonResponse({"liked": liked, "count": comment.likes_count()})
+    return _redirect_to_blog(request, anchor=f"blog-comment-{comment.pk}")

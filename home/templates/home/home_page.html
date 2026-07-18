@@ -15,32 +15,70 @@
   {% endif %}
 </section>
 
-<section>
-  <h2 class="section-title">Свежие публикации</h2>
-  {% if latest_articles %}
-    <div class="card-list">
-      {% for article in latest_articles %}
-        <article class="card card--article">
-          {% if article.first_published_at %}
-            <p class="meta card__meta">{{ article.first_published_at|date:"d E Y" }}</p>
-          {% endif %}
-          <div class="card__row">
-            {% if article.cover %}
-              <a class="card__cover" href="{% pageurl article %}" tabindex="-1" aria-hidden="true">
-                {% image article.cover fill-280x280 as thumb %}
-                <img src="{{ thumb.url }}" alt="">
-              </a>
+<section class="home-feed" aria-label="Свежие материалы">
+  <div class="home-feed__col">
+    <h2 class="section-title">Статьи</h2>
+    {% if latest_articles %}
+      <div class="card-list">
+        {% for article in latest_articles %}
+          <article class="card card--article">
+            {% if article.first_published_at %}
+              <p class="meta card__meta">{{ article.first_published_at|date:"d E Y" }}</p>
             {% endif %}
-            <div class="card__body">
-              <h3 class="card__title"><a href="{% pageurl article %}">{{ article.title }}</a></h3>
-              {% if article.intro %}<p class="muted card__intro">{{ article.intro }}</p>{% endif %}
+            <div class="card__row">
+              {% if article.cover %}
+                <a class="card__cover" href="{% pageurl article %}" tabindex="-1" aria-hidden="true">
+                  {% image article.cover fill-280x280 as thumb %}
+                  <img src="{{ thumb.url }}" alt="">
+                </a>
+              {% endif %}
+              <div class="card__body">
+                <h3 class="card__title"><a href="{% pageurl article %}">{{ article.title }}</a></h3>
+                {% if article.intro %}<p class="muted card__intro">{{ article.intro }}</p>{% endif %}
+              </div>
             </div>
-          </div>
-        </article>
-      {% endfor %}
-    </div>
-  {% else %}
-    <p class="empty">Публикации появятся здесь после наполнения раздела «Статьи».</p>
-  {% endif %}
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">Пока нет опубликованных статей.</p>
+    {% endif %}
+  </div>
+
+  <div class="home-feed__divider" aria-hidden="true"></div>
+
+  <div class="home-feed__col">
+    <h2 class="section-title">Блог</h2>
+    {% if latest_posts %}
+      <div class="card-list">
+        {% for post in latest_posts %}
+          <article class="card card--blog">
+            <p class="meta card__meta">{{ post.created_at|date:"d E Y" }}</p>
+            <div class="card__body">
+              <h3 class="card__title">
+                {% if blog_index %}
+                  <a href="{% pageurl blog_index %}#post-{{ post.pk }}">{{ post.body|truncatechars:120 }}</a>
+                {% else %}
+                  {{ post.body|truncatechars:120 }}
+                {% endif %}
+              </h3>
+              <p class="muted card__intro">{{ post.author_label }}</p>
+              {% if post.images.all %}
+                <ul class="home-feed__thumbs">
+                  {% for img in post.images.all|slice:":3" %}
+                    <li>
+                      <img src="{{ img.image.url }}" alt="" loading="lazy">
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">Пока нет записей в блоге.</p>
+    {% endif %}
+  </div>
 </section>
 {% endblock %}

@@ -70,7 +70,7 @@
             <form class="like-form" method="post" action="{% url 'blog_post_like' post.pk %}">
               {% csrf_token %}
               <button type="submit" class="like-button{% if post.is_liked %} is-active{% endif %}" aria-pressed="{% if post.is_liked %}true{% else %}false{% endif %}" aria-label="Нравится">
-                <span aria-hidden="true">♥</span> <span>{{ post.likes_count }}</span>
+                <span aria-hidden="true">♥</span> <span data-like-count>{{ post.likes_count }}</span>
               </button>
             </form>
           {% else %}
@@ -138,4 +138,5 @@
 </div>
 <script src="{% static 'js/comment-images.js' %}"></script>
 <script src="{% static 'js/blog-comments-toggle.js' %}"></script>
+<script src="{% static 'js/blog-likes.js' %}"></script>
 {% endblock %}

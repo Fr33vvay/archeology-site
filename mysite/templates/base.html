@@ -20,20 +20,44 @@
       </a>
       <nav class="nav" aria-label="Основное меню">
         {% if site_root %}
-          <a href="{% pageurl site_root %}" {% if page and page.url == site_root.url %}class="is-active"{% endif %}>Главная</a>
+          <a href="{% pageurl site_root %}" class="nav__link{% if page and page.url == site_root.url %} is-active{% endif %}" data-nav="home">
+            <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 3.2 3.5 10.2V21h6.2v-6.3h4.6V21h6.2V10.2L12 3.2z"/></svg>
+            <span class="nav__label">Главная</span>
+          </a>
         {% endif %}
         {% for item in nav_pages %}
-          <a href="{% pageurl item %}" {% if page and item.url in page.url %}class="is-active"{% endif %}>{{ item.title }}</a>
+          <a href="{% pageurl item %}" class="nav__link{% if page and item.url in page.url %} is-active{% endif %}" data-nav="{{ item.slug }}">
+            {% if item.slug == "articles" %}
+              <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6 3.5h9.2a2.3 2.3 0 0 1 2.3 2.3v14.4l-3.2-1.8-3.2 1.8V5.8H6V20H4.2V5.8A2.3 2.3 0 0 1 6.5 3.5H6z"/></svg>
+            {% elif item.slug == "blog" %}
+              <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6.2 4.2c3.1-.9 6.4-.9 9.5 0l1.1.3v15l-1.1-.3c-2.9-.8-6-.8-8.9 0l-1.4.4V4.5l.8-.3zm2 2.3v10.7c2.3-.4 4.7-.4 7 0V6.5c-2.3-.4-4.7-.4-7 0z"/></svg>
+            {% elif item.slug == "gallery" %}
+              <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4.5 5.5h15v13h-15v-13zm1.8 1.8v7.4l3.2-3.2 2.4 2.4 4.2-4.2 2.4 2.4V7.3H6.3zm3.1 2.2a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6z"/></svg>
+            {% elif item.slug == "contacts" %}
+              <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M7.2 3.8c.5-.5 1.3-.5 1.8 0l2 2c.5.5.5 1.3 0 1.8l-1.2 1.2c.8 1.6 2 2.8 3.6 3.6l1.2-1.2c.5-.5 1.3-.5 1.8 0l2 2c.5.5.5 1.3 0 1.8l-1.3 1.3c-.7.7-1.8.9-2.7.5-2.2-.9-4.2-2.4-5.8-4.1S6.1 10.6 5.2 8.4c-.4-.9-.2-2 .5-2.7L7.2 3.8z"/></svg>
+            {% elif item.slug == "author" %}
+              <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 2.8c3.5 0 6.3 3 6.3 6.7S15.5 16.2 12 16.2 5.7 13.2 5.7 9.5 8.5 2.8 12 2.8zm0 1.9c-2.4 0-4.4 2.2-4.4 4.8S9.6 14.3 12 14.3s4.4-2.2 4.4-4.8S14.4 4.7 12 4.7zM9.8 17.2h4.4v1.4h-1.1v2.6h-2.2v-2.6H9.8z"/></svg>
+            {% else %}
+              <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            {% endif %}
+            <span class="nav__label">{{ item.title }}</span>
+          </a>
         {% endfor %}
-        <a href="{% url 'search' %}">Поиск</a>
-        {% block nav_comments %}{% endblock %}
         {% if user.is_authenticated %}
-          <a href="{% url 'account_profile' %}" class="nav-user">Профиль</a>
-          <a href="{% url 'account_logout' %}">Выход</a>
+          <a href="{% url 'account_profile' %}" class="nav__link nav-user{% if request.resolver_match.url_name == 'account_profile' %} is-active{% endif %}" data-nav="profile">
+            <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 4.5a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 9.5c3.7 0 7 2 7 4.5v1.5H5V18.5C5 16 8.3 14 12 14z"/></svg>
+            <span class="nav__label">Профиль</span>
+          </a>
         {% else %}
-          <a href="{% url 'account_login' %}">Вход</a>
-          <a href="{% url 'account_signup' %}">Регистрация</a>
+          <a href="{% url 'account_login' %}" class="nav__link" data-nav="login">
+            <svg class="nav__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 4.5a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 9.5c3.7 0 7 2 7 4.5v1.5H5V18.5C5 16 8.3 14 12 14z"/></svg>
+            <span class="nav__label">Вход</span>
+          </a>
+          <a href="{% url 'account_signup' %}" class="nav__link nav__link--text-only" data-nav="signup">
+            <span class="nav__label">Регистрация</span>
+          </a>
         {% endif %}
+        {% block nav_comments %}{% endblock %}
       </nav>
     </div>
   </header>

@@ -277,6 +277,14 @@ class BlogLikeTests(BlogTestBase):
         self.client.post(url)
         self.assertEqual(BlogPostLike.objects.filter(post=self.post, user=self.author).count(), 0)
 
+    def test_like_post_ajax_keeps_page(self):
+        """AJAX-лайк возвращает JSON и не требует перезагрузки ленты."""
+        self.client.login(username="reader", password="pass-12345")
+        url = f"/blog/posts/like/{self.post.pk}/"
+        response = self.client.post(url, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"liked": True, "count": 1})
+
     def test_like_comment_toggle(self):
         """Лайк комментария также переключается повторным нажатием."""
         self.client.login(username="reader", password="pass-12345")

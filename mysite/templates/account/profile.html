@@ -30,4 +30,8 @@
   {% endfor %}
   <button class="button" type="submit">Сохранить</button>
 </form>
+
+<p class="profile-logout">
+  <a href="{% url 'account_logout' %}">Выйти из аккаунта</a>
+</p>
 {% endblock %}

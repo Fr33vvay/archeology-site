@@ -5,6 +5,7 @@ from wagtail.fields import RichTextField
 from wagtail.models import Page
 
 from articles.models import ArticlePage
+from blog.models import BlogIndexPage, BlogPost
 
 
 class HomePage(Page):
@@ -48,6 +49,13 @@ class HomePage(Page):
         context["latest_articles"] = (
             ArticlePage.objects.live().public().order_by("-first_published_at")[:3]
         )
+        context["latest_posts"] = (
+            BlogPost.objects.filter(is_deleted=False)
+            .select_related("author")
+            .prefetch_related("images")
+            .order_by("-created_at")[:3]
+        )
+        context["blog_index"] = BlogIndexPage.objects.live().public().first()
         return context
 
 
