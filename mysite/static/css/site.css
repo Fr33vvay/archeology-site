@@ -128,7 +128,8 @@ a:hover {
 
 /* Точечная подгонка оптического размера на мобилке */
 .nav__link[data-nav="articles"] .nav__icon {
-  transform: scale(1.32) translateY(0.14rem);
+  /* ~5% высоты иконки вверх от предыдущего положения */
+  transform: scale(1.32) translateY(0.07rem);
 }
 
 .nav__link[data-nav="gallery"] .nav__icon {
