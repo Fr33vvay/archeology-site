@@ -19,7 +19,7 @@ def site_navigation(request):
     root = site.root_page
     pages = list(root.get_children().live().public().specific().in_menu())
     order = {slug: index for index, slug in enumerate(NAV_SLUG_ORDER)}
-    pages.sort(key=lambda page: order.get(page.slug, 100 + page.path))
+    pages.sort(key=lambda page: (order.get(page.slug, 100), page.path))
     return {
         "nav_pages": pages,
         "site_root": root,
