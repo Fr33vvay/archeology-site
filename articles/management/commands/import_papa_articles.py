@@ -313,15 +313,16 @@ class _BlockCollector(HTMLParser):
 
 
 def _looks_like_caption(text: str) -> bool:
+    """Подпись — только явные маркеры; обычный короткий абзац не глотаем."""
     if not text or len(text) > 255:
         return False
     low = text.lower().strip()
-    if low.startswith(("рис.", "рис ", "рисунок", "илл.", "фото", "табл.")):
-        return True
-    # короткая подпись без точки в середине длинного предложения
-    if len(text) <= 120 and text.count(".") <= 1:
-        return True
-    return False
+    return bool(
+        re.match(
+            r"^(рис\.?|рисунок|илл\.?|иллюстрация|фото|табл\.?|таблица)\b",
+            low,
+        )
+    )
 
 
 def parse_html_document(html_path: Path, title_hint: str) -> ParsedDoc:
