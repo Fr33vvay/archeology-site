@@ -379,6 +379,23 @@ class LibreOfficeFootnoteConvertTests(TestCase):
         _html, notes = convert_lo_footnotes(raw)
         self.assertIn("<i>Автор</i>", notes)
 
+    def test_convert_lo_footnotes_paragraph_bodies_without_div(self):
+        """Плоский HTML Writer: тела сносок — абзацы с name=…sym, без div."""
+        from articles.lo_footnotes import convert_lo_footnotes
+
+        raw = (
+            '<p><a name="sdfootnote1anc"></a>'
+            'Текст<a href="#sdfootnote1sym"><sup>1</sup></a>.</p>'
+            '<p><a name="sdfootnote1sym"></a>'
+            '<a href="#sdfootnote1anc">1</a> Источник В.</p>'
+        )
+        html, notes = convert_lo_footnotes(raw)
+        self.assertIn('href="#fn-1"', html)
+        self.assertNotIn("sdfootnote", html)
+        self.assertNotIn("sdfootnote", notes)
+        self.assertIn("Источник В.", notes)
+        self.assertIn('href="#fnref-1"', notes)
+
 
 class FootnoteAnchorTests(TestCase):
     """Рабочие якоря сносок и возврата в текст."""

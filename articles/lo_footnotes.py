@@ -12,24 +12,38 @@ _BODY_DIV_RE = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 
-# Ссылка в тексте: class/name/href с sdfootnoteNanc / sdendnoteNsym
+# Вариант без div: абзац начинается с <a name="sdfootnoteNsym"></a>
+_BODY_P_RE = re.compile(
+    r"<p\b[^>]*>\s*"
+    r'(?:<a\b[^>]*\bname\s*=\s*["\']sd(?:end|foot)note(\d+)sym["\'][^>]*>\s*</a>\s*)'
+    r"(.*?)</p>",
+    re.IGNORECASE | re.DOTALL,
+)
+
+# Ссылка в тексте (не пустой якорь): class / name+текст / href на #…sym
 _REF_A_RE = re.compile(
-    r'<a\b[^>]*\b(?:'
+    r"<a\b[^>]*\b(?:"
     r'class\s*=\s*["\'][^"\']*sd(?:end|foot)noteanc[^"\']*["\']|'
     r'(?:name|id)\s*=\s*["\']sd(?:end|foot)note\d+anc["\']|'
     r'href\s*=\s*["\']#sd(?:end|foot)note\d+sym["\']'
-    r')[^>]*>(.*?)</a>',
+    r")[^>]*>(.+?)</a>",
     re.IGNORECASE | re.DOTALL,
 )
 
 _NUM_IN_REF_RE = re.compile(r"sd(?:end|foot)note(\d+)", re.IGNORECASE)
 _SYM_LINK_RE = re.compile(
-    r'<a\b[^>]*\b(?:'
+    r"<a\b[^>]*\b(?:"
     r'class\s*=\s*["\'][^"\']*sd(?:end|foot)notesym[^"\']*["\']|'
     r'(?:name|id)\s*=\s*["\']sd(?:end|foot)note\d+sym["\']|'
     r'href\s*=\s*["\']#sd(?:end|foot)note\d+anc["\']'
-    r')[^>]*>.*?</a>',
+    r")[^>]*>.*?</a>",
     re.IGNORECASE | re.DOTALL,
+)
+
+# Пустые name-якоря LibreOffice (<a name="sdfootnote1anc"></a>)
+_EMPTY_NAME_A_RE = re.compile(
+    r'<a\b[^>]*\bname\s*=\s*["\']sd(?:end|foot)note\d+(?:anc|sym)["\'][^>]*>\s*</a>',
+    re.IGNORECASE,
 )
 
 # Лишняя обёртка <sup> вокруг уже готовой ссылки сноски
@@ -78,23 +92,38 @@ def _clean_inline_html(fragment: str) -> str:
     return text.strip()
 
 
+def _store_body(bodies: dict[int, str], n: int, raw: str) -> None:
+    raw = _SYM_LINK_RE.sub("", raw, count=1)
+    # Обратная ссылка вида <a href="#sdfootnoteNanc">N</a> в «плоском» HTML
+    raw = re.sub(
+        r'<a\b[^>]*href\s*=\s*["\']#sd(?:end|foot)note\d+anc["\'][^>]*>.*?</a>',
+        "",
+        raw,
+        count=1,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    text = _clean_inline_html(raw)
+    if not text:
+        return
+    if n in bodies and bodies[n]:
+        bodies[n] = f"{bodies[n]} {text}"
+    else:
+        bodies[n] = text
+
+
 def _extract_bodies(html: str) -> tuple[str, dict[int, str]]:
     bodies: dict[int, str] = {}
 
-    def repl(match: re.Match[str]) -> str:
-        n = int(match.group(1))
-        raw = match.group(2)
-        raw = _SYM_LINK_RE.sub("", raw, count=1)
-        text = _clean_inline_html(raw)
-        if text:
-            # Несколько <p> внутри одного div склеиваем
-            if n in bodies and bodies[n]:
-                bodies[n] = f"{bodies[n]} {text}"
-            else:
-                bodies[n] = text
+    def repl_div(match: re.Match[str]) -> str:
+        _store_body(bodies, int(match.group(1)), match.group(2))
         return ""
 
-    cleaned = _BODY_DIV_RE.sub(repl, html)
+    def repl_p(match: re.Match[str]) -> str:
+        _store_body(bodies, int(match.group(1)), match.group(2))
+        return ""
+
+    cleaned = _BODY_DIV_RE.sub(repl_div, html)
+    cleaned = _BODY_P_RE.sub(repl_p, cleaned)
     return cleaned, bodies
 
 
@@ -141,6 +170,7 @@ def convert_lo_footnotes(html: str) -> tuple[str, str]:
         return html, ""
 
     html, bodies = _extract_bodies(html)
+    html = _EMPTY_NAME_A_RE.sub("", html)
     html = _replace_refs(html)
     html = _NESTED_SUP_REF_RE.sub(r"\1", html)
     html = _EMPTY_A_RE.sub("", html)
