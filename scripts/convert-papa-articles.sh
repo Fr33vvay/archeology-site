@@ -32,7 +32,7 @@ for f in "${files[@]}"; do
   stem="${base%.*}"
   dest="$OUT/$stem"
   mkdir -p "$dest"
-  if compgen -G "$dest"/*.html > /dev/null; then
+  if ls "$dest"/*.html >/dev/null 2>&1; then
     echo "EXISTS $stem"
     continue
   fi

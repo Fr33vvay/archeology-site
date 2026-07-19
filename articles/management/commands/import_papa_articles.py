@@ -223,6 +223,13 @@ class _BlockCollector(HTMLParser):
             self._capture_inline = True
             return
 
+        # LibreOffice часто ставит <img> между абзацами, не внутри <p>
+        if tag == "img" and not self._capture_inline:
+            src = attrs_d.get("src") or ""
+            if src:
+                self.events.append(("image", src, ""))
+            return
+
         if not self._capture_inline:
             return
 

@@ -876,3 +876,21 @@ class PapaImportTitleTests(TestCase):
         types = [b["type"] for b in parsed.blocks]
         self.assertEqual(types, ["paragraph", "image", "paragraph"])
         self.assertEqual(parsed.blocks[1]["value"]["caption"], "Рис. 1. Подпись")
+
+    def test_parse_html_standalone_img_between_paragraphs(self):
+        """Картинка между абзацами (типичный HTML LibreOffice) попадает в блоки."""
+        from articles.management.commands.import_papa_articles import parse_html_document
+
+        html = self._tmp / "between.html"
+        jpg = self._tmp / "solo.jpg"
+        Image.new("RGB", (40, 30), color=(10, 20, 30)).save(jpg, format="JPEG")
+        html.write_text(
+            "<html><body>"
+            "<p>Текст до.</p>"
+            '<img src="solo.jpg"/>'
+            "<p>Текст после.</p>"
+            "</body></html>",
+            encoding="utf-8",
+        )
+        parsed = parse_html_document(html, "Тест")
+        self.assertEqual([b["type"] for b in parsed.blocks], ["paragraph", "image", "paragraph"])
