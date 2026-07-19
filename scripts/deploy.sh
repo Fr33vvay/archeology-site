@@ -28,6 +28,7 @@ git push origin HEAD
 echo "==> Сборка и перезапуск на $DEPLOY_HOST"
 # default.conf на ВМ — рабочая копия default-ssl.conf; сбрасываем перед pull.
 # nginx пересоздаём: после cp bind-mount может держать старый inode файла.
-ssh "$DEPLOY_HOST" "cd $DEPLOY_DIR && sudo git checkout -- nginx/default.conf && sudo git pull && sudo docker compose build web && sudo docker compose run --rm web python manage.py migrate --noinput && sudo docker compose run --rm web python manage.py ensure_site && sudo docker compose up -d web && sudo cp -f nginx/default-ssl.conf nginx/default.conf && sudo docker compose up -d --force-recreate nginx && sudo docker compose exec -T nginx nginx -t"
+# После sudo-операций возвращаем владельца .env SSH-пользователю (cron/compose).
+ssh "$DEPLOY_HOST" "cd $DEPLOY_DIR && sudo git checkout -- nginx/default.conf && sudo git pull && sudo docker compose build web && sudo docker compose run --rm web python manage.py migrate --noinput && sudo docker compose run --rm web python manage.py ensure_site && sudo docker compose up -d web && sudo cp -f nginx/default-ssl.conf nginx/default.conf && sudo docker compose up -d --force-recreate nginx && sudo docker compose exec -T nginx nginx -t && if [ -f .env ]; then sudo chown \"\$USER:\$USER\" .env && sudo chmod 600 .env; fi"
 
 echo "==> Готово"
