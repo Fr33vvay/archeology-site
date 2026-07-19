@@ -452,15 +452,40 @@
   var pickedCoords = null;
   var miniMap = null;
   var miniPlacemark = null;
+  // Модалка снимает фокус с RTE — помним блок и range до открытия.
+  var mapInsertTarget = null;
+  var lastRteSelection = null;
+
+  function editorFromSelectionNode(node) {
+    if (!node) return null;
+    var el = node.nodeType === 1 ? node : node.parentElement;
+    if (!el) return null;
+    var found = el.closest(".article-rte__editor");
+    if (!found || !blocksRoot.contains(found)) return null;
+    return found;
+  }
+
+  function captureRteSelection() {
+    var sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return null;
+    var editor = editorFromSelectionNode(sel.anchorNode);
+    if (!editor || !editor.contains(sel.anchorNode)) return null;
+    return { editor: editor, range: sel.getRangeAt(0).cloneRange() };
+  }
+
+  document.addEventListener("selectionchange", function () {
+    var captured = captureRteSelection();
+    if (captured) lastRteSelection = captured;
+  });
 
   function activeEditor() {
-    var sel = window.getSelection();
-    if (sel && sel.anchorNode) {
-      var ed = sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement;
-      if (ed) {
-        var found = ed.closest(".article-rte__editor");
-        if (found) return found;
-      }
+    var captured = captureRteSelection();
+    if (captured) return captured.editor;
+    if (mapInsertTarget && mapInsertTarget.editor && document.contains(mapInsertTarget.editor)) {
+      return mapInsertTarget.editor;
+    }
+    if (lastRteSelection && lastRteSelection.editor && document.contains(lastRteSelection.editor)) {
+      return lastRteSelection.editor;
     }
     return blocksRoot.querySelector(".article-rte__editor");
   }
@@ -475,6 +500,7 @@
 
   function openMapModal() {
     if (!mapModal) return;
+    mapInsertTarget = captureRteSelection() || lastRteSelection;
     if (!articleId) {
       alert("Сначала сохраните статью как черновик, затем добавьте точку на карте.");
       return;
@@ -520,7 +546,12 @@
   }
 
   function insertMapPointLink(data) {
-    var editor = activeEditor();
+    var target = mapInsertTarget;
+    var editor = target && target.editor && document.contains(target.editor) ? target.editor : null;
+    var savedRange = target && target.range ? target.range : null;
+    if (!editor) {
+      editor = activeEditor();
+    }
     if (!editor) {
       addParagraph("");
       editor = activeEditor();
@@ -535,7 +566,14 @@
       '">На карте: ' +
       label +
       "</a>";
+    editor.focus();
+    if (savedRange && editor.contains(savedRange.startContainer)) {
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedRange);
+    }
     insertHtmlAtCursor(editor, " " + html + " ");
+    mapInsertTarget = null;
   }
 
   function saveMapPoint() {
@@ -581,6 +619,12 @@
   }
 
   if (mapBtn) {
+    // mousedown раньше blur RTE: запоминаем курсор и не отдаём фокус кнопке.
+    mapBtn.addEventListener("mousedown", function (e) {
+      var captured = captureRteSelection() || lastRteSelection;
+      if (captured) mapInsertTarget = captured;
+      e.preventDefault();
+    });
     mapBtn.addEventListener("click", openMapModal);
   }
   if (mapModal) {
