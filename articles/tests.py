@@ -832,3 +832,47 @@ class FavoriteArticleTests(TestCase):
         response = self.client.post(f"/articles/favorites/{fav.pk}/remove/")
         self.assertIn(response.status_code, (403, 404))
         self.assertTrue(FavoriteArticle.objects.filter(pk=fav.pk).exists())
+
+
+class PapaImportTitleTests(TestCase):
+    """Проверяет очистку заголовка статьи из имени файла импорта."""
+
+    def setUp(self):
+        import tempfile
+
+        self._tmp = Path(tempfile.mkdtemp(prefix="papa-test-"))
+
+    def tearDown(self):
+        import shutil
+
+        shutil.rmtree(self._tmp, ignore_errors=True)
+
+    def test_title_from_filename_strips_illustration_noise(self):
+        """Из имени файла убираются пометки про картинки и копии."""
+        from articles.management.commands.import_papa_articles import title_from_filename
+
+        self.assertEqual(title_from_filename("Трезини. Картинки.docx"), "Трезини")
+        self.assertEqual(title_from_filename("Филлимонов картинки — копия.doc"), "Филлимонов")
+        self.assertEqual(title_from_filename("Растрелли с ил..odt"), "Растрелли")
+        self.assertEqual(title_from_filename("Шердом илл.doc"), "Шердом")
+
+    def test_parse_html_keeps_paragraph_and_image_order(self):
+        """Разбор HTML LibreOffice чередует текст и картинки."""
+        from articles.management.commands.import_papa_articles import parse_html_document
+
+        html = self._tmp / "sample.html"
+        jpg = self._tmp / "pic.jpg"
+        Image.new("RGB", (40, 30), color=(10, 20, 30)).save(jpg, format="JPEG")
+        html.write_text(
+            "<html><body>"
+            "<p>Первый абзац статьи.</p>"
+            '<p><img src="pic.jpg"/></p>'
+            "<p>Рис. 1. Подпись</p>"
+            "<p>Второй абзац.</p>"
+            "</body></html>",
+            encoding="utf-8",
+        )
+        parsed = parse_html_document(html, "Тест")
+        types = [b["type"] for b in parsed.blocks]
+        self.assertEqual(types, ["paragraph", "image", "paragraph"])
+        self.assertEqual(parsed.blocks[1]["value"]["caption"], "Рис. 1. Подпись")
