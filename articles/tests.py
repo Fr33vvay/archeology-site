@@ -343,6 +343,43 @@ class CommentViewTests(TestCase):
         self.assertNotIn("showModal", source)
 
 
+class LibreOfficeFootnoteConvertTests(TestCase):
+    """Конвертация сносок LibreOffice в формат #fn-/#fnref-."""
+
+    def test_convert_lo_footnotes_endnotes(self):
+        """Тела sdendnote выносятся в ol, ссылки в тексте ведут на #fn-N."""
+        from articles.lo_footnotes import convert_lo_footnotes
+
+        raw = (
+            "<p>Абзац"
+            '<a class="sdendnoteanc" name="sdendnote1anc" href="#sdendnote1sym">'
+            "<sup>1</sup></a>.</p>"
+            '<div id="sdendnote1"><p class="sdendnote-western">'
+            '<a class="sdendnotesym" name="sdendnote1sym" href="#sdendnote1anc">1</a>'
+            "Книга А.</p></div>"
+        )
+        html, notes = convert_lo_footnotes(raw)
+        self.assertIn('href="#fn-1"', html)
+        self.assertNotIn("sdendnote", html)
+        self.assertIn("Книга А.", notes)
+        self.assertIn('href="#fnref-1"', notes)
+        self.assertIn("<ol>", notes)
+
+    def test_convert_lo_footnotes_keeps_emphasis_in_body(self):
+        """В тексте сноски сохраняется курсив."""
+        from articles.lo_footnotes import convert_lo_footnotes
+
+        raw = (
+            '<div id="sdfootnote1"><p>'
+            '<a class="sdfootnotesym" name="sdfootnote1sym" href="#sdfootnote1anc">1</a>'
+            "<i>Автор</i> Текст.</p></div>"
+            '<p><a class="sdfootnoteanc" name="sdfootnote1anc" href="#sdfootnote1sym">'
+            "<sup>1</sup></a></p>"
+        )
+        _html, notes = convert_lo_footnotes(raw)
+        self.assertIn("<i>Автор</i>", notes)
+
+
 class FootnoteAnchorTests(TestCase):
     """Рабочие якоря сносок и возврата в текст."""
 
@@ -894,3 +931,50 @@ class PapaImportTitleTests(TestCase):
         )
         parsed = parse_html_document(html, "Тест")
         self.assertEqual([b["type"] for b in parsed.blocks], ["paragraph", "image", "paragraph"])
+
+    def test_parse_html_converts_libreoffice_endnotes(self):
+        """Сноски LibreOffice (sdendnote) становятся #fn-/#fnref- в тексте и списке."""
+        from articles.management.commands.import_papa_articles import parse_html_document
+
+        html = self._tmp / "notes.html"
+        html.write_text(
+            "<html><body>"
+            "<p>Текст"
+            '<sup><a class="sdendnoteanc" name="sdendnote1anc" '
+            'href="#sdendnote1sym"><sup>1</sup></a></sup>.</p>'
+            '<div id="sdendnote1"><p class="sdendnote-western">'
+            '<a class="sdendnotesym" name="sdendnote1sym" href="#sdendnote1anc">1</a>'
+            "Источник А.</p></div>"
+            "</body></html>",
+            encoding="utf-8",
+        )
+        parsed = parse_html_document(html, "Со сносками")
+        joined = "".join(b["value"] for b in parsed.blocks if b["type"] == "paragraph")
+        self.assertIn('href="#fn-1"', joined)
+        self.assertIn("<sup>1</sup>", joined)
+        self.assertIn('href="#fnref-1"', joined)
+        self.assertIn("Источник А.", joined)
+        self.assertNotIn("sdendnote", joined)
+
+    def test_parse_html_converts_libreoffice_footnotes(self):
+        """Обычные сноски LibreOffice (sdfootnote) тоже конвертируются."""
+        from articles.management.commands.import_papa_articles import parse_html_document
+
+        html = self._tmp / "footnotes.html"
+        html.write_text(
+            "<html><body>"
+            "<p>Факт"
+            '<a class="sdfootnoteanc" name="sdfootnote2anc" '
+            'href="#sdfootnote2sym"><sup>2</sup></a>.</p>'
+            '<div id="sdfootnote2"><p class="sdfootnote-western">'
+            '<a class="sdfootnotesym" name="sdfootnote2sym" href="#sdfootnote2anc">2</a>'
+            "Примечание Б.</p></div>"
+            "</body></html>",
+            encoding="utf-8",
+        )
+        parsed = parse_html_document(html, "Сноски")
+        joined = "".join(b["value"] for b in parsed.blocks if b["type"] == "paragraph")
+        self.assertIn('href="#fn-2"', joined)
+        self.assertIn('href="#fnref-2"', joined)
+        self.assertIn("Примечание Б.", joined)
+        self.assertNotIn("sdfootnote", joined)

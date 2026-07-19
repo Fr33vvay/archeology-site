@@ -20,6 +20,7 @@ from django.utils.text import slugify
 from wagtail.images.models import Image as WagtailImage
 from wagtail.models import Page
 
+from articles.lo_footnotes import convert_lo_footnotes
 from articles.models import ArticleIndexPage, ArticlePage
 
 SOURCE_SUFFIXES = {".doc", ".docx", ".odt", ".DOC", ".DOCX", ".ODT"}
@@ -211,7 +212,12 @@ class _BlockCollector(HTMLParser):
         if self._skip_depth:
             self._skip_depth += 1
             return
-        if tag in {"script", "style", "head"} or "sdfootnote" in cls or tag == "div" and "footnote" in cls:
+        # Тела сносок LibreOffice вырезаются заранее в convert_lo_footnotes;
+        # здесь не глотаем sdfootnoteanc — иначе пропадают номера в тексте.
+        if tag in {"script", "style", "head"}:
+            self._skip_depth = 1
+            return
+        if tag == "div" and ("footnote" in cls or "endnote" in cls):
             self._skip_depth = 1
             return
 
@@ -327,6 +333,7 @@ def _looks_like_caption(text: str) -> bool:
 
 def parse_html_document(html_path: Path, title_hint: str) -> ParsedDoc:
     html = html_path.read_text(encoding="utf-8", errors="replace")
+    html, footnotes_html = convert_lo_footnotes(html)
     parser = _BlockCollector()
     parser.feed(html)
     parser.close()
@@ -389,6 +396,9 @@ def parse_html_document(html_path: Path, title_hint: str) -> ParsedDoc:
             pending_caption_for = None
             blocks.append({"type": "paragraph", "value": inner})
             plain_parts.append(text)
+
+    if footnotes_html:
+        blocks.append({"type": "paragraph", "value": footnotes_html})
 
     plain = "\n".join(plain_parts).strip()
     intro = plain[:300].rsplit(" ", 1)[0] if len(plain) > 300 else plain
