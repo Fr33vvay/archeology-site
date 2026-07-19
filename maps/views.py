@@ -28,12 +28,31 @@ def _map_page_url(request) -> str:
     return "/map/"
 
 
+def serialize_map_points_for_editor(request=None) -> list[dict]:
+    """Список всех точек для модалки редактора: id, title, lat, lon, map_url."""
+    map_base = _map_page_url(request).rstrip("/") if request is not None else "/map"
+    points = MapPoint.objects.order_by("title", "id")
+    return [
+        {
+            "id": point.pk,
+            "title": point.title,
+            "lat": float(point.lat),
+            "lon": float(point.lon),
+            "map_url": f"{map_base}/?point={point.pk}",
+        }
+        for point in points
+    ]
+
+
 @login_required
-@require_http_methods(["POST"])
+@require_http_methods(["GET", "POST"])
 def create_map_point(request):
     denied = _require_superuser(request.user)
     if denied:
         return denied
+
+    if request.method == "GET":
+        return JsonResponse(serialize_map_points_for_editor(request), safe=False)
 
     try:
         payload = json.loads(request.body.decode("utf-8") or "{}")

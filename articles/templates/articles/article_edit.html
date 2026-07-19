@@ -85,7 +85,7 @@
       <button type="button" class="map-point-modal__close" data-map-point-close aria-label="Закрыть">×</button>
     </div>
     <p class="map-point-modal__hint" data-map-point-hint>
-      Кликните по карте, чтобы выбрать координаты, затем укажите подпись.
+      Клик по метке — выбрать существующую точку. Клик по пустому месту на карте — создать новую (укажите подпись и нажмите «Вставить в текст»).
     </p>
     <div class="map-point-modal__map" data-map-point-mini-map></div>
     <label class="auth-label">
@@ -102,6 +102,7 @@
 
 <link rel="stylesheet" href="{% static 'css/map.css' %}">
 <script type="application/json" id="article-editor-initial">{{ blocks_json|safe }}</script>
+<script type="application/json" id="map-points-editor-data">{{ map_points_editor_json|default:"[]"|safe }}</script>
 {% if map_available and yandex_maps_api_key %}
 <script src="https://api-maps.yandex.ru/2.1/?apikey={{ yandex_maps_api_key|urlencode }}&lang=ru_RU"></script>
 {% endif %}

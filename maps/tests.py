@@ -104,6 +104,34 @@ class MapPointCreateTests(MapTestBase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(MapPoint.objects.count(), 0)
 
+    def test_superuser_can_list_map_points(self):
+        """Суперпользователь получает JSON-список всех точек для модалки редактора."""
+        point = MapPoint.objects.create(
+            article=self.article,
+            lat=Decimal("59.9400"),
+            lon=Decimal("30.3200"),
+            title="Эрмитаж",
+            anchor_id="map-point-hermitage-list",
+        )
+        self.client.login(username="map-admin", password="pass-12345")
+        response = self.client.get("/maps/points/")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIsInstance(data, list)
+        self.assertEqual(len(data), 1)
+        item = data[0]
+        self.assertEqual(item["id"], point.pk)
+        self.assertEqual(item["title"], "Эрмитаж")
+        self.assertEqual(float(item["lat"]), 59.94)
+        self.assertEqual(float(item["lon"]), 30.32)
+        self.assertIn("point=", item["map_url"])
+
+    def test_regular_user_cannot_list_map_points(self):
+        """Обычный пользователь не может получать список точек карты."""
+        self.client.login(username="map-reader", password="pass-12345")
+        response = self.client.get("/maps/points/")
+        self.assertEqual(response.status_code, 403)
+
 
 class MapPageViewTests(MapTestBase):
     def test_map_page_returns_200_with_points(self):
@@ -216,6 +244,94 @@ class MapArticleLinkTests(MapTestBase):
         self.assertTrue(MapPoint.objects.filter(pk=keep.pk).exists())
         self.assertFalse(MapPoint.objects.filter(pk=orphan.pk).exists())
 
+    def test_saving_reused_map_link_does_not_create_second_point(self):
+        """Reuse чужой точки: сохранение статьи со ссылкой не создаёт второй MapPoint."""
+        owner_point = MapPoint.objects.create(
+            article=self.article,
+            lat=Decimal("59.95"),
+            lon=Decimal("30.32"),
+            title="Общая точка",
+            anchor_id="map-point-shared",
+        )
+        other = ArticlePage(
+            title="Другая статья",
+            slug="article-map-other",
+            intro="intro",
+            body=[
+                {
+                    "type": "paragraph",
+                    "value": (
+                        f'<p><a class="map-point-link" href="/map/?point={owner_point.pk}">'
+                        f"На карте: Общая точка</a></p>"
+                    ),
+                }
+            ],
+        )
+        self.index.add_child(instance=other)
+        other.save_revision().publish()
+        other = ArticlePage.objects.get(pk=other.pk)
+
+        self.client.login(username="map-admin", password="pass-12345")
+        body = (
+            f'<p><a class="map-point-link" href="/map/?point={owner_point.pk}">'
+            f"На карте: Общая точка</a></p>"
+        )
+        response = self.client.post(
+            f"/articles/{other.pk}/edit/",
+            {
+                "title": other.title,
+                "intro": "intro",
+                "blocks_json": json.dumps([{"type": "paragraph", "value": body}]),
+                "action": "draft",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(MapPoint.objects.count(), 1)
+        self.assertEqual(MapPoint.objects.get().article_id, self.article.pk)
+
+    def test_save_article_keeps_foreign_map_points_after_removing_reused_link(self):
+        """Удаление чужой reused-ссылки не удаляет точку владельца."""
+        owner_point = MapPoint.objects.create(
+            article=self.article,
+            lat=Decimal("59.95"),
+            lon=Decimal("30.32"),
+            title="Чужая точка",
+            anchor_id="map-point-foreign",
+        )
+        other = ArticlePage(
+            title="Статья с reuse",
+            slug="article-map-reuse",
+            intro="intro",
+            body=[
+                {
+                    "type": "paragraph",
+                    "value": (
+                        f'<p><a class="map-point-link" href="/map/?point={owner_point.pk}">'
+                        f"На карте</a></p>"
+                    ),
+                }
+            ],
+        )
+        self.index.add_child(instance=other)
+        other.save_revision().publish()
+        other = ArticlePage.objects.get(pk=other.pk)
+
+        self.client.login(username="map-admin", password="pass-12345")
+        response = self.client.post(
+            f"/articles/{other.pk}/edit/",
+            {
+                "title": other.title,
+                "intro": "intro",
+                "blocks_json": json.dumps(
+                    [{"type": "paragraph", "value": "<p>Без карты</p>"}]
+                ),
+                "action": "draft",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(MapPoint.objects.filter(pk=owner_point.pk).exists())
+        self.assertEqual(MapPoint.objects.count(), 1)
+
     def test_editor_exposes_map_point_ui_for_superuser(self):
         """В редакторе суперпользователя есть UI для точки на карте."""
         self.client.login(username="map-admin", password="pass-12345")
@@ -224,6 +340,24 @@ class MapArticleLinkTests(MapTestBase):
         html = response.content.decode()
         self.assertIn("Точка на карте", html)
         self.assertIn("data-map-point-url", html)
+
+    def test_editor_exposes_existing_map_points_json(self):
+        """В редакторе есть JSON всех точек для выбора существующей метки."""
+        point = MapPoint.objects.create(
+            article=self.article,
+            lat=Decimal("59.94"),
+            lon=Decimal("30.31"),
+            title="Уже есть",
+            anchor_id="map-point-existing-editor",
+        )
+        self.client.login(username="map-admin", password="pass-12345")
+        response = self.client.get(f"/articles/{self.article.pk}/edit/")
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn("map-points-editor-data", html)
+        self.assertIn("Уже есть", html)
+        self.assertIn(str(point.pk), html)
+        self.assertIn("метк", html.lower())
 
 
 class MapNavTests(MapTestBase):

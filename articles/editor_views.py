@@ -17,6 +17,7 @@ from wagtail.models import Page
 
 from articles.models import ArticleIndexPage, ArticlePage
 from maps.sync import sync_article_map_points
+from maps.views import serialize_map_points_for_editor
 
 
 def _require_superuser(user):
@@ -204,6 +205,9 @@ def edit_article(request, page_id):
             "has_unpublished_draft": has_unpublished,
             "is_new": False,
             "map_point_create_url": "/maps/points/",
+            "map_points_editor_json": json.dumps(
+                serialize_map_points_for_editor(request), ensure_ascii=False
+            ),
         },
     )
 
@@ -258,6 +262,9 @@ def create_article(request):
             "has_unpublished_draft": False,
             "is_new": True,
             "map_point_create_url": "/maps/points/",
+            "map_points_editor_json": json.dumps(
+                serialize_map_points_for_editor(request), ensure_ascii=False
+            ),
         },
     )
 

@@ -452,6 +452,17 @@
   var pickedCoords = null;
   var miniMap = null;
   var miniPlacemark = null;
+  var existingPlacemarks = [];
+  var existingMapPoints = [];
+  try {
+    var pointsDataEl = document.getElementById("map-points-editor-data");
+    existingMapPoints = JSON.parse((pointsDataEl && pointsDataEl.textContent) || "[]");
+    if (!Array.isArray(existingMapPoints)) existingMapPoints = [];
+  } catch (err) {
+    existingMapPoints = [];
+  }
+  var reuseHint =
+    "Клик по метке — выбрать существующую точку. Клик по пустому месту на карте — создать новую (укажите подпись и нажмите «Вставить в текст»).";
   // Модалка снимает фокус с RTE — помним блок и range до открытия.
   var mapInsertTarget = null;
   var lastRteSelection = null;
@@ -496,6 +507,47 @@
     pickedCoords = null;
     if (titleInput) titleInput.value = "";
     if (coordsEl) coordsEl.textContent = "";
+    if (miniPlacemark && miniMap) {
+      miniMap.geoObjects.remove(miniPlacemark);
+      miniPlacemark = null;
+    }
+  }
+
+  function clearExistingPlacemarks() {
+    if (!miniMap) return;
+    existingPlacemarks.forEach(function (pm) {
+      miniMap.geoObjects.remove(pm);
+    });
+    existingPlacemarks = [];
+  }
+
+  function renderExistingPlacemarks() {
+    if (!miniMap || typeof ymaps === "undefined") return;
+    clearExistingPlacemarks();
+    existingMapPoints.forEach(function (point) {
+      if (point == null || point.lat == null || point.lon == null) return;
+      var pm = new ymaps.Placemark(
+        [Number(point.lat), Number(point.lon)],
+        {
+          hintContent: point.title || "Точка",
+          balloonContent: point.title || "Точка",
+        },
+        { preset: "islands#blueDotIcon" }
+      );
+      pm.events.add("click", function (e) {
+        e.stopPropagation();
+        insertMapPointLink(
+          {
+            title: point.title,
+            map_url: point.map_url,
+          },
+          { reuse: true }
+        );
+        closeMapModal();
+      });
+      miniMap.geoObjects.add(pm);
+      existingPlacemarks.push(pm);
+    });
   }
 
   function openMapModal() {
@@ -514,7 +566,7 @@
       return;
     }
     if (hintEl) {
-      hintEl.textContent = "Кликните по карте, чтобы выбрать координаты, затем укажите подпись.";
+      hintEl.textContent = reuseHint;
     }
     if (miniMapEl) miniMapEl.hidden = false;
     mapModal.hidden = false;
@@ -542,10 +594,12 @@
       } else {
         miniMap.container.fitToViewport();
       }
+      renderExistingPlacemarks();
     });
   }
 
-  function insertMapPointLink(data) {
+  function insertMapPointLink(data, options) {
+    options = options || {};
     var target = mapInsertTarget;
     var editor = target && target.editor && document.contains(target.editor) ? target.editor : null;
     var savedRange = target && target.range ? target.range : null;
@@ -558,14 +612,25 @@
     }
     if (!editor) return;
     var label = escapeHtml(data.title || "На карте");
-    var html =
-      '<a id="' +
-      escapeHtml(data.anchor_id) +
-      '" class="map-point-link" href="' +
-      escapeHtml(data.map_url) +
-      '">На карте: ' +
-      label +
-      "</a>";
+    var html;
+    // Reuse: только ссылка на ?point=<id>, без нового MapPoint и без чужого якоря.
+    if (options.reuse || !data.anchor_id) {
+      html =
+        '<a class="map-point-link" href="' +
+        escapeHtml(data.map_url) +
+        '">На карте: ' +
+        label +
+        "</a>";
+    } else {
+      html =
+        '<a id="' +
+        escapeHtml(data.anchor_id) +
+        '" class="map-point-link" href="' +
+        escapeHtml(data.map_url) +
+        '">На карте: ' +
+        label +
+        "</a>";
+    }
     editor.focus();
     if (savedRange && editor.contains(savedRange.startContainer)) {
       var sel = window.getSelection();
@@ -611,6 +676,13 @@
       })
       .then(function (data) {
         insertMapPointLink(data);
+        existingMapPoints.push({
+          id: data.id,
+          title: data.title,
+          lat: Number(data.lat),
+          lon: Number(data.lon),
+          map_url: data.map_url,
+        });
         closeMapModal();
       })
       .catch(function () {
