@@ -64,7 +64,7 @@
         {% if block.block_type == "heading" %}
           <h2 class="block-heading">{{ block.value }}</h2>
         {% elif block.block_type == "paragraph" %}
-          <div class="block-paragraph">{{ block.value|richtext|footnote_anchors }}</div>
+          <div class="block-paragraph">{{ block.value|richtext|footnote_anchors|map_point_anchors }}</div>
         {% elif block.block_type == "quote" %}
           <blockquote class="block-quote">{{ block.value }}</blockquote>
         {% else %}
@@ -300,4 +300,5 @@
 <script src="{% static 'js/comment-images.js' %}"></script>
 <script src="{% static 'js/unique-views.js' %}"></script>
 <script src="{% static 'js/article-favorites.js' %}"></script>
+<script src="{% static 'js/map-article-links.js' %}"></script>
 {% endblock %}

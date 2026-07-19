@@ -14,6 +14,7 @@ from wagtail.models import Page, Site
 from articles.models import ArticleIndexPage, ArticlePage
 from gallery.models import GalleryFolderPage, GalleryIndexPage, GalleryPhoto
 from home.models import ContactPage, HomePage
+from maps.models import MapPage
 
 
 def make_image(title: str, color: tuple[int, int, int], filename: str) -> Image:
@@ -149,6 +150,20 @@ class Command(BaseCommand):
         else:
             contact.show_in_menus = True
             contact.save_revision().publish()
+
+        map_page = MapPage.objects.child_of(home).first()
+        if not map_page:
+            map_page = MapPage(
+                title="Карта",
+                slug="map",
+                intro="<p>Объекты на карте Санкт-Петербурга.</p>",
+                show_in_menus=True,
+            )
+            home.add_child(instance=map_page)
+            map_page.save_revision().publish()
+        else:
+            map_page.show_in_menus = True
+            map_page.save_revision().publish()
 
         if not ArticlePage.objects.child_of(articles_index).filter(slug="demo-article-1").exists():
             a1 = ArticlePage(

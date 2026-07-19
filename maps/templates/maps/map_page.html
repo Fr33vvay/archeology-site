@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load static wagtailcore_tags %}
+
+{% block title %}{{ page.title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/map.css' %}">
+{% endblock %}
+
+{% block content %}
+<h1 class="page-title">{{ page.title }}</h1>
+{% if page.intro %}
+  <div class="lede">{{ page.intro|richtext }}</div>
+{% endif %}
+
+{% if not map_available %}
+  <p class="map-unavailable" role="status">
+    Карта временно недоступна. Ключ Яндекс.Карт ещё не настроен.
+  </p>
+{% else %}
+  <div
+    id="site-map"
+    class="site-map"
+    data-map-root
+    data-focus-point="{% if focus_point_id %}{{ focus_point_id }}{% endif %}"
+    aria-label="Карта объектов Санкт-Петербурга"
+  ></div>
+  {% if not map_points %}
+    <p class="muted map-empty">Точек на карте пока нет.</p>
+  {% endif %}
+{% endif %}
+
+<script type="application/json" id="map-points-data">{{ map_points_json_text|safe }}</script>
+{% endblock %}
+
+{% block extra_js %}
+{% if map_available %}
+<script src="https://api-maps.yandex.ru/2.1/?apikey={{ yandex_maps_api_key|urlencode }}&lang=ru_RU"></script>
+<script src="{% static 'js/site-map.js' %}"></script>
+{% endif %}
+{% endblock %}

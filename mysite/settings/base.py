@@ -11,6 +11,7 @@ INSTALLED_APPS = [
     "articles.apps.ArticlesConfig",
     "gallery",
     "blog",
+    "maps.apps.MapsConfig",
     "accounts.apps.AccountsConfig",
     "wagtail.contrib.forms",
     "wagtail.contrib.redirects",
@@ -68,6 +69,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "mysite.context_processors.site_navigation",
+                "mysite.context_processors.yandex_maps",
             ],
         },
     },
@@ -162,6 +164,9 @@ EMAIL_ENCRYPTION_KEY = os.environ.get("EMAIL_ENCRYPTION_KEY") or os.environ.get(
     "FERNET_KEY", ""
 )
 EMAIL_ENCRYPTION_ALLOW_DERIVED_KEY = True
+
+# Ключ JavaScript API Яндекс.Карт (пустой — карта показывает заглушку).
+YANDEX_MAPS_API_KEY = os.environ.get("YANDEX_MAPS_API_KEY", "")
 
 # Получатели еженедельного отчёта (понедельник ~12:00 Europe/Moscow).
 WEEKLY_REPORT_RECIPIENTS = [

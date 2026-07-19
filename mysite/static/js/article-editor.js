@@ -438,4 +438,159 @@
   form.addEventListener("submit", function () {
     jsonInput.value = JSON.stringify(collectBlocks());
   });
+
+  // ——— Точка на карте ———
+  var mapPointUrl = form.getAttribute("data-map-point-url") || "/maps/points/";
+  var articleId = form.getAttribute("data-article-id") || "";
+  var mapAvailable = form.getAttribute("data-map-available") === "1";
+  var mapModal = document.querySelector("[data-map-point-modal]");
+  var mapBtn = form.querySelector("[data-map-point]");
+  var miniMapEl = mapModal ? mapModal.querySelector("[data-map-point-mini-map]") : null;
+  var titleInput = mapModal ? mapModal.querySelector("[data-map-point-title]") : null;
+  var coordsEl = mapModal ? mapModal.querySelector("[data-map-point-coords]") : null;
+  var hintEl = mapModal ? mapModal.querySelector("[data-map-point-hint]") : null;
+  var pickedCoords = null;
+  var miniMap = null;
+  var miniPlacemark = null;
+
+  function activeEditor() {
+    var sel = window.getSelection();
+    if (sel && sel.anchorNode) {
+      var ed = sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement;
+      if (ed) {
+        var found = ed.closest(".article-rte__editor");
+        if (found) return found;
+      }
+    }
+    return blocksRoot.querySelector(".article-rte__editor");
+  }
+
+  function closeMapModal() {
+    if (!mapModal) return;
+    mapModal.hidden = true;
+    pickedCoords = null;
+    if (titleInput) titleInput.value = "";
+    if (coordsEl) coordsEl.textContent = "";
+  }
+
+  function openMapModal() {
+    if (!mapModal) return;
+    if (!articleId) {
+      alert("Сначала сохраните статью как черновик, затем добавьте точку на карте.");
+      return;
+    }
+    if (!mapAvailable || typeof ymaps === "undefined") {
+      if (hintEl) {
+        hintEl.textContent = "Карта временно недоступна: ключ Яндекс.Карт не настроен.";
+      }
+      if (miniMapEl) miniMapEl.hidden = true;
+      mapModal.hidden = false;
+      return;
+    }
+    if (hintEl) {
+      hintEl.textContent = "Кликните по карте, чтобы выбрать координаты, затем укажите подпись.";
+    }
+    if (miniMapEl) miniMapEl.hidden = false;
+    mapModal.hidden = false;
+    ymaps.ready(function () {
+      if (!miniMap) {
+        miniMap = new ymaps.Map(miniMapEl, {
+          center: [59.9386, 30.3141],
+          zoom: 11,
+          controls: ["zoomControl"],
+        });
+        miniMap.events.add("click", function (e) {
+          var coords = e.get("coords");
+          pickedCoords = { lat: coords[0], lon: coords[1] };
+          if (coordsEl) {
+            coordsEl.textContent =
+              "Координаты: " + coords[0].toFixed(6) + ", " + coords[1].toFixed(6);
+          }
+          if (miniPlacemark) {
+            miniPlacemark.geometry.setCoordinates(coords);
+          } else {
+            miniPlacemark = new ymaps.Placemark(coords, {}, { preset: "islands#brownDotIcon" });
+            miniMap.geoObjects.add(miniPlacemark);
+          }
+        });
+      } else {
+        miniMap.container.fitToViewport();
+      }
+    });
+  }
+
+  function insertMapPointLink(data) {
+    var editor = activeEditor();
+    if (!editor) {
+      addParagraph("");
+      editor = activeEditor();
+    }
+    if (!editor) return;
+    var label = escapeHtml(data.title || "На карте");
+    var html =
+      '<a id="' +
+      escapeHtml(data.anchor_id) +
+      '" class="map-point-link" href="' +
+      escapeHtml(data.map_url) +
+      '">На карте: ' +
+      label +
+      "</a>";
+    insertHtmlAtCursor(editor, " " + html + " ");
+  }
+
+  function saveMapPoint() {
+    if (!articleId) {
+      alert("Сначала сохраните статью как черновик.");
+      return;
+    }
+    if (!mapAvailable || typeof ymaps === "undefined") {
+      alert("Карта временно недоступна: ключ Яндекс.Карт не настроен.");
+      return;
+    }
+    if (!pickedCoords) {
+      alert("Кликните по карте, чтобы выбрать точку.");
+      return;
+    }
+    var title = (titleInput && titleInput.value ? titleInput.value : "").trim();
+    if (!title) {
+      alert("Укажите подпись точки.");
+      return;
+    }
+    fetch(mapPointUrl, {
+      method: "POST",
+      headers: Object.assign({ "Content-Type": "application/json" }, csrfHeaders()),
+      credentials: "same-origin",
+      body: JSON.stringify({
+        article_id: Number(articleId),
+        lat: String(pickedCoords.lat),
+        lon: String(pickedCoords.lon),
+        title: title,
+      }),
+    })
+      .then(function (r) {
+        if (!r.ok) throw new Error("create failed");
+        return r.json();
+      })
+      .then(function (data) {
+        insertMapPointLink(data);
+        closeMapModal();
+      })
+      .catch(function () {
+        alert("Не удалось создать точку на карте.");
+      });
+  }
+
+  if (mapBtn) {
+    mapBtn.addEventListener("click", openMapModal);
+  }
+  if (mapModal) {
+    mapModal.querySelectorAll("[data-map-point-close]").forEach(function (btn) {
+      btn.addEventListener("click", closeMapModal);
+    });
+    var saveBtn = mapModal.querySelector("[data-map-point-save]");
+    if (saveBtn) saveBtn.addEventListener("click", saveMapPoint);
+    mapModal.addEventListener("click", function (ev) {
+      if (ev.target === mapModal) closeMapModal();
+    });
+  }
 })();

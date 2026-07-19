@@ -11,6 +11,7 @@ from articles import editor_views as articles_editor_views
 from articles import views as articles_views
 from blog import views as blog_views
 from gallery import views as gallery_views
+from maps import views as maps_views
 from search import views as search_views
 
 urlpatterns = [
@@ -56,6 +57,12 @@ urlpatterns = [
         "articles/favorites/<int:fav_id>/remove/",
         articles_views.remove_favorite,
         name="article_favorite_remove",
+    ),
+    path("maps/points/", maps_views.create_map_point, name="map_point_create"),
+    path(
+        "maps/points/<int:point_id>/",
+        maps_views.delete_map_point,
+        name="map_point_delete",
     ),
     path(
         "gallery/photos/<int:photo_id>/edit/",

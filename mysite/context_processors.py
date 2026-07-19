@@ -1,3 +1,4 @@
+from django.conf import settings
 from wagtail.models import Site
 
 # Порядок пунктов меню после «Главная» (по slug страницы).
@@ -5,6 +6,7 @@ NAV_SLUG_ORDER = (
     "articles",
     "blog",
     "gallery",
+    "map",
     "contacts",
     "author",
 )
@@ -48,4 +50,13 @@ def site_navigation(request):
         "site_root": root,
         "site_header_title": header_title,
         "site_footer_text": footer_text,
+    }
+
+
+def yandex_maps(request):
+    """Ключ Яндекс.Карт для шаблонов (страница карты и редактор)."""
+    key = getattr(settings, "YANDEX_MAPS_API_KEY", "") or ""
+    return {
+        "yandex_maps_api_key": key,
+        "map_available": bool(key.strip()),
     }

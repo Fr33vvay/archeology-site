@@ -25,6 +25,10 @@
     action="{% if is_new %}{% url 'article_create' %}{% else %}{% url 'article_edit' article.pk %}{% endif %}"
     data-article-editor
     data-upload-url="{% url 'article_upload_image' %}"
+    data-map-point-url="{{ map_point_create_url }}"
+    {% if not is_new and article.pk %}data-article-id="{{ article.pk }}"{% endif %}
+    data-map-available="{% if map_available %}1{% else %}0{% endif %}"
+    {% if yandex_maps_api_key %}data-yandex-maps-key="{{ yandex_maps_api_key }}"{% endif %}
   >
     {% csrf_token %}
     <div class="article-editor__layout">
@@ -54,6 +58,7 @@
             <button type="button" class="button" data-add="quote">+ Цитата</button>
             <button type="button" class="button" data-add="image">+ Иллюстрация</button>
             <button type="button" class="button" data-add="gallery">+ Галерея</button>
+            <button type="button" class="button" data-map-point>Точка на карте</button>
           </div>
         </div>
         <div class="article-editor__sidebar-section">
@@ -73,6 +78,32 @@
   </form>
 </article>
 
+<div class="map-point-modal" data-map-point-modal hidden>
+  <div class="map-point-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="map-point-modal-title">
+    <div class="map-point-modal__head">
+      <h2 class="map-point-modal__title" id="map-point-modal-title">Точка на карте</h2>
+      <button type="button" class="map-point-modal__close" data-map-point-close aria-label="Закрыть">×</button>
+    </div>
+    <p class="map-point-modal__hint" data-map-point-hint>
+      Кликните по карте, чтобы выбрать координаты, затем укажите подпись.
+    </p>
+    <div class="map-point-modal__map" data-map-point-mini-map></div>
+    <label class="auth-label">
+      <span>Подпись</span>
+      <input type="text" maxlength="255" data-map-point-title placeholder="Например: Петропавловская крепость">
+    </label>
+    <p class="muted" data-map-point-coords></p>
+    <div class="map-point-modal__actions">
+      <button type="button" class="button" data-map-point-save>Вставить в текст</button>
+      <button type="button" class="button" data-map-point-close>Отмена</button>
+    </div>
+  </div>
+</div>
+
+<link rel="stylesheet" href="{% static 'css/map.css' %}">
 <script type="application/json" id="article-editor-initial">{{ blocks_json|safe }}</script>
+{% if map_available and yandex_maps_api_key %}
+<script src="https://api-maps.yandex.ru/2.1/?apikey={{ yandex_maps_api_key|urlencode }}&lang=ru_RU"></script>
+{% endif %}
 <script src="{% static 'js/article-editor.js' %}"></script>
 {% endblock %}

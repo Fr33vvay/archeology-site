@@ -63,6 +63,7 @@ class HomePage(Page):
         "articles.ArticleIndexPage",
         "gallery.GalleryIndexPage",
         "blog.BlogIndexPage",
+        "maps.MapPage",
         "home.AuthorPage",
         "home.ContactPage",
     ]

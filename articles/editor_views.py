@@ -16,6 +16,7 @@ from wagtail.images.models import Image as WagtailImage
 from wagtail.models import Page
 
 from articles.models import ArticleIndexPage, ArticlePage
+from maps.sync import sync_article_map_points
 
 
 def _require_superuser(user):
@@ -179,6 +180,7 @@ def edit_article(request, page_id):
             return redirect("article_edit", page_id=page_id)
 
         revision = page.save_revision(user=request.user, log_action=True)
+        sync_article_map_points(page, blocks=page.body)
         if action == "publish":
             revision.publish(user=request.user)
             messages.success(request, "Статья опубликована.")
@@ -201,6 +203,7 @@ def edit_article(request, page_id):
             "blocks_json": json.dumps(_blocks_for_editor(page), ensure_ascii=False),
             "has_unpublished_draft": has_unpublished,
             "is_new": False,
+            "map_point_create_url": "/maps/points/",
         },
     )
 
@@ -233,6 +236,7 @@ def create_article(request):
             article.body = _parse_blocks(request.POST.get("blocks_json", "[]"))
             parent.add_child(instance=article)
             revision = article.save_revision(user=request.user, log_action=True)
+            sync_article_map_points(article, blocks=article.body)
             if action == "publish":
                 revision.publish(user=request.user)
                 messages.success(request, "Статья создана и опубликована.")
@@ -253,6 +257,7 @@ def create_article(request):
             "blocks_json": "[]",
             "has_unpublished_draft": False,
             "is_new": True,
+            "map_point_create_url": "/maps/points/",
         },
     )
 

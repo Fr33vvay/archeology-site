@@ -62,3 +62,48 @@ def apply_footnote_anchors(html: str) -> str:
 def footnote_anchors(html):
     """Django-фильтр: разметка научных сносок с рабочими якорями."""
     return mark_safe(apply_footnote_anchors(html))
+
+
+def apply_map_point_anchors(html: str) -> str:
+    """Проставляет id якорей на ссылках точек карты (по ?point=<id>)."""
+    if not html:
+        return html
+
+    html = str(html)
+    point_ids = [int(m) for m in re.findall(r"[?&]point=(\d+)", html)]
+    if not point_ids:
+        return html
+
+    from maps.models import MapPoint
+
+    anchors = {
+        p.pk: p.anchor_id
+        for p in MapPoint.objects.filter(pk__in=point_ids).only("id", "anchor_id")
+    }
+    if not anchors:
+        return html
+
+    def add_id(match: re.Match[str]) -> str:
+        before, point_id_s, after = match.group(1), match.group(2), match.group(3)
+        point_id = int(point_id_s)
+        anchor = anchors.get(point_id)
+        if not anchor:
+            return match.group(0)
+        tag = before + point_id_s + after
+        if re.search(r'\bid\s*=', tag):
+            return tag
+        # Вставляем id сразу после <a
+        return re.sub(r"^<a\b", f'<a id="{anchor}"', tag, count=1)
+
+    return re.sub(
+        r'(<a\b[^>]*[?&]point=)(\d+)([^>]*>)',
+        add_id,
+        html,
+    )
+
+
+@register.filter(name="map_point_anchors")
+def map_point_anchors(html):
+    """Django-фильтр: якоря для ссылок на точки карты."""
+    return mark_safe(apply_map_point_anchors(html))
+
