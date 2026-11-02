@@ -1,12 +1,19 @@
 #!/usr/bin/env bash
 # Бэкап БД + медиа → локально и на Яндекс Диск (rclone).
 # Запуск из каталога проекта: ./scripts/backup.sh
-# Переменные окружения — см. ниже.
+# Настройки — в .env (см. BACKUP.md); окружение имеет приоритет.
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+source "$ROOT/scripts/backup-config.sh"
+
+# A deliberate disable is successful and must never trigger failure mail.
+if [[ "$BACKUP_ENABLED" == 0 ]]; then
+  echo 'Бэкапы выключены (BACKUP_ENABLED=0); запуск пропущен.'
+  exit 0
+fi
 
 STAMP="$(date +%Y%m%d-%H%M%S)"
 OUT_DIR="${BACKUP_DIR:-$ROOT/backups}"
@@ -16,7 +23,6 @@ RCLONE_PATH="${BACKUP_RCLONE_PATH:-Archeology-site/backups}"
 ALERT_TO="${BACKUP_ALERT_TO:-7634216@gmail.com}"
 LOG="${BACKUP_LOG:-$HOME/backup.log}"
 WORKDIR=""
-FAILED=0
 
 log() {
   echo "[$(date -Is)] $*" | tee -a "$LOG"
@@ -64,7 +70,6 @@ PY
 
 on_error() {
   local line="$1"
-  FAILED=1
   local reason="Сбой в scripts/backup.sh (строка ${line}). См. ~/backup.log"
   log "ОШИБКА: $reason"
   notify_fail "$reason"
@@ -96,10 +101,7 @@ ARCHIVE="backup-${STAMP}.tar.gz"
 log "Сборка $ARCHIVE…"
 tar -czf "$OUT_DIR/$ARCHIVE" -C "$WORKDIR" db.sql media.tar.gz
 
-# На ВМ оставляем только свежий полный архив
-find "$OUT_DIR" -maxdepth 1 -type f -name 'backup-*.tar.gz' ! -name "$ARCHIVE" -delete
-# Старые промежуточные файлы прежнего формата
-find "$OUT_DIR" -maxdepth 1 -type f \( -name 'db-*.sql' -o -name 'media-*.tar.gz' \) -delete
+# Сохраняем предыдущие локальные архивы, в том числе при сбое загрузки.
 
 if ! command -v rclone >/dev/null 2>&1; then
   log "rclone не установлен"
