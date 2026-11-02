@@ -6,7 +6,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-DEPLOY_HOST="${DEPLOY_HOST:-freeway@158.160.180.56}"
+DEPLOY_HOST="${DEPLOY_HOST:-freeway@178.154.215.39}"
 DEPLOY_DIR="${DEPLOY_DIR:-/opt/archeology-site}"
 
 if [[ -n "$(git status --porcelain)" ]]; then
